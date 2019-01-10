@@ -16,18 +16,11 @@ initial_state = 'LED_off'
 
 v.LED_n  = 4 # Number of LED to use.
 
-# line to print to run the next line as full python in hijacking class
-v.hijack_next = 'hijack_next'
-
 
 # Define behaviour. 
 
 def LED_on(event):
     if event == 'entry':
-        
-        print(v.hijack_next)
-        print('np.mean([1,3,5,6])')
-        timed_goto_state('LED_off', 0.5 * second)
         pyb.LED(v.LED_n).on()
     elif event == 'exit':
         pyb.LED(v.LED_n).off()

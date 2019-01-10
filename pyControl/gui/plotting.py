@@ -5,8 +5,12 @@ import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui
 
 from config.gui_settings import event_history_len, state_history_len, analog_history_dur
+
 ##jrowland
-from gui.hijacker import hijack
+import sys
+sys.path.append('/home/jamesrowland/Documents/Code/blimp') 
+
+from blimp import blimp
 ##jrowland
 
 # Task_plotter -----------------------------------------------------------------------
@@ -30,7 +34,7 @@ class Task_plotter(QtGui.QWidget):
         self.analog_plot.axis.setXLink(self.states_plot.axis)
         self.analog_plot.axis.setVisible(False)
         ##jrowland
-        self.hijack = hijack()
+        self.blimp = blimp()
         ##jrowland
 
 
@@ -48,7 +52,7 @@ class Task_plotter(QtGui.QWidget):
         self.events_plot.set_state_machine(sm_info)
         self.analog_plot.set_state_machine(sm_info)
         ##jrowland
-        self.hijack.set_state_machine(sm_info)
+        self.blimp.set_state_machine(sm_info)
         ##jrowland
 
         if sm_info['analog_inputs']:
@@ -73,7 +77,7 @@ class Task_plotter(QtGui.QWidget):
         self.run_clock.update(run_time)
         
         ##jrowland
-        self.hijack.update(new_data, run_time)
+        self.blimp.update(new_data, run_time)
         ##jrowland
 
 
