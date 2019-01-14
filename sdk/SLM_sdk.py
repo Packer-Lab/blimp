@@ -128,7 +128,7 @@ class SLM_sdk():
         # Always call Delete_SDK before exiting
         self.Delete_SDK_func(self.sdk, c_bool(1))
         
-        # Turn the SLM power on
+        # Turn the SLM power off
         self.SLM_power_func(self.sdk, c_bool(0))
         
         print('Disconnected from SLM and powered down')
