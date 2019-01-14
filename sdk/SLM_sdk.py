@@ -5,7 +5,6 @@ import sys
 import imageio
 import numpy as np
 
-
 class SLM_sdk():
 
     def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = r"512white.bmp"):
@@ -13,7 +12,14 @@ class SLM_sdk():
         # Load the DLL
         # Blink_SDK_C.dll, Blink_SDK.dll, FreeImage.dll and wdapi1021.dll
         # should all be located in the same directory as the program referencing the library
-        cdll.LoadLibrary("Blink_SDK_C")
+        
+        #need to chdir into the sdk directory (Where this script is located) in order to load dlls
+        abspath = os.path.abspath(__file__)
+        dname = os.path.dirname(abspath)
+        os.chdir(dname)
+        
+        #load dlls
+        cdll.LoadLibrary("Blink_SDK_C.dll")
         self.slm_lib = CDLL("Blink_SDK_C")
    
         #python 3 requries conversion to bytes for c_char_p, use plain string in python 2
