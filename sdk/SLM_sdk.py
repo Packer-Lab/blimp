@@ -7,7 +7,7 @@ import numpy as np
 
 class SLM_sdk():
 
-    def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = r"512white.bmp"):
+    def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = "512white.bmp"):
           
         # Load the DLL
         # Blink_SDK_C.dll, Blink_SDK.dll, FreeImage.dll and wdapi1021.dll

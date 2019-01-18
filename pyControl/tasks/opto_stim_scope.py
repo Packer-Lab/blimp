@@ -3,9 +3,9 @@ import hardware_definition as hw
 from devices import *
 
 
-states = ['trial_start', 'SLM_state','detect_lick_nogo']
+states = ['trial_start', 'SLM_state', 'LED_state', 'detect_lick_nogo']
         
-events = ['SLM_trial']
+events = ['SLM_trial', 'LED_trial']
 
 initial_state = 'trial_start'
 
@@ -20,8 +20,9 @@ v.reward_time = 60 # time that the solenoid is open during rewards (ms)
 v.d_prime_threshold = 2
 
 
-v.chanceGo = 0.5 
-    
+v.chanceSLM = 0.4 
+v.chanceLED = 0.4
+v.chanceNoGo = 0.2
 
     
 v.lick_window = 2.5  # reward time window during which mouse has to lick (s)
@@ -58,6 +59,12 @@ v.num_go = 0 # the total number of go trials
 v.num_nogo = 0
 v.consecGo = 0 # count the number of consecutive go and nogo trials
 v.consecNoGo = 0
+
+# the current trial state
+v.isSLM = False
+v.isLED = False
+v.isNoGo = False
+
 
 # trial outcome counters
 v.rolling_hit = [] # rolling hit counter
@@ -96,13 +103,13 @@ v.print_switch = True #print the switch between autoreward conditions only once
 
 def trial_start(event):
 
-    # randomly choose whether it's a go or nogo trial
+    # randomly choose whether it's an LED, SLM or nogo trial
     if event == 'entry':
 
         v.num_trials += 1
-        v.isGo = withprob(v.chanceGo)
+        v.isSLM = withprob(v.chanceSLM)
         
-        if v.isGo:
+        if v.isSLM:
             v.isNoGo = False
         else:
             v.isNoGo = True
