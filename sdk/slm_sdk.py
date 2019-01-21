@@ -5,7 +5,7 @@ import sys
 import imageio
 import numpy as np
 
-class SLM_sdk():
+class SLMsdk():
 
     def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = "512white.bmp"):
           
