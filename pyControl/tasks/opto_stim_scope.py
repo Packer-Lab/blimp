@@ -20,7 +20,7 @@ v.reward_time = 60 # time that the solenoid is open during rewards (ms)
 v.d_prime_threshold = 2
 
 
-v.chanceSLM = 0.4 
+v.chanceSLM = 0.8 
 v.chanceLED = 0.4
 v.chanceNoGo = 0.2
 
@@ -32,7 +32,7 @@ v.lick_window = 2.5  # reward time window during which mouse has to lick (s)
 v.withold_len = [x / 10 for x in range(40, 61)] #time that the animal must withold licking, a list in 0.1 increments from 4-6, that can be sampled randomly
 v.ITI = 5 # the inter-trial interval(S). This is also the time during which rewards are registered as recieved if the animal licks
 
-# parameters for swtiching between autorewarded and not autorewarded conditions
+# parameters for switching between autorewarded and not autorewarded conditions
 v.miss_switch = 3 # the number of consecutive missed trials before the animal is switched back to autoreward
 
 # the number of consecutive trials where the animal did not drink a reward before ending the framework
@@ -55,7 +55,7 @@ v.consecIgnored = 0 #the number of rewards that have been delieverd that the ani
 #v.rolling_counter = 0 #counts to 10 trials on a rolling basis
 
 # counters for go and nogo trials
-v.num_go = 0 # the total number of go trials
+v.num_SLM = 0 # the total number of go trials
 v.num_nogo = 0
 v.consecGo = 0 # count the number of consecutive go and nogo trials
 v.consecNoGo = 0
@@ -99,13 +99,20 @@ v.pulses_done = 0 # the number of pulses of the LED
 #misc variables
 v.print_switch = True #print the switch between autoreward conditions only once
  
+# Run start and stop behaviour.
+def run_start():
+    ##make sure solenoid is shut before starting 
+    hw.solenoid.off()
 
+def run_end():  
+    hw.solenoid.off()
+    hw.LED.off()# Turn off hardware outputs.
+    
 
 def trial_start(event):
 
     # randomly choose whether it's an LED, SLM or nogo trial
     if event == 'entry':
-
         v.num_trials += 1
         v.isSLM = withprob(v.chanceSLM)
         
@@ -114,7 +121,7 @@ def trial_start(event):
         else:
             v.isNoGo = True
             
-        if v.isGo:
+        if v.isSLM:
             timed_goto_state('SLM_state', 2*second)
         else:
             timed_goto_state('detect_lick_nogo', 2*second)
@@ -123,9 +130,12 @@ def trial_start(event):
 
 def SLM_state(event):    
     if event == 'entry':
-        
+        v.num_SLM += 1
         #call the blimp all optical stim function
         publish_event('SLM_trial')
+        trial_barcode = (gauss_rand(10000,10000))
+        print('SLM trial Number {0} Barcode {1}'.format(v.num_SLM, trial_barcode))
+        
         
         timed_goto_state('trial_start', 1*second)
         
@@ -133,45 +143,11 @@ def SLM_state(event):
         
 def detect_lick_nogo(event):
     if event == 'entry':
-        publish_event('SLM_trial')
         print('nogo trial')
         timed_goto_state('trial_start', 1*second)
             
         
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+
             
             
             

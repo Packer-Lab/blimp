@@ -1,0 +1,11 @@
+#the path to the naparm folder containing cell locations
+naparm_path : /home/jamesrowland/Desktop/2018-11-15_J015_NAPARM_010
+
+# the path that the alignment files will be saved
+output_path : /home/jamesrowland/Documents/blimp_outputs
+
+# the experiment to run, should match a blimp function that runs SLM stimulation paradigms. Current options are 'all cells' and 'random 10 percents' (randomly select stim of 10%, 20%, 30% ... 100% etc cells)
+experiment : all_cells
+
+
+
