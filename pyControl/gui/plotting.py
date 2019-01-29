@@ -8,7 +8,12 @@ from config.gui_settings import event_history_len, state_history_len, analog_his
 
 ##jrowland
 import sys
-sys.path.append('/home/jamesrowland/Documents/Code/blimp') 
+from pathlib import Path
+import os
+
+#add the umbrella blimp directory to path
+base_path = Path(os.path.dirname(__file__))
+sys.path.append(str(base_path.parent.parent))
 
 from blimp import Blimp
 ##jrowland

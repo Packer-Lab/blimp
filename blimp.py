@@ -54,7 +54,7 @@ class Blimp(SLMsdk, PrairieInterface):
         
         ''' called every time there is a new print, state or event in pycontrol '''
         
-        #ID of any event that occurs
+        #all prints that occur from the board
         pycontrol_print = [nd for nd in new_data if nd[0] == 'P']
         
         x = [nd for nd in new_data]
