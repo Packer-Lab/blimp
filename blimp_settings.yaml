@@ -1,11 +1,18 @@
-#the path to the naparm folder containing cell locations
-naparm_path : /home/jamesrowland/Desktop/2018-11-15_J015_NAPARM_010
+#the path to the points naparm .mat file containing cell locations
+points_path : /home/jamesrowland/Desktop/2019-01-22_nothing_NAPARM_007/2019-01-22_nothing_NAPARM_007_Points.mat
 
 # the path that the alignment files will be saved
 output_path : /home/jamesrowland/Documents/blimp_outputs
 
-# the experiment to run, should match a blimp function that runs SLM stimulation paradigms. Current options are 'all cells' and 'random 10 percents' (randomly select stim of 10%, 20%, 30% ... 100% etc cells)
-experiment : all_cells
+
+
+# the experiment to run. Give the name of the class inside the experiment folder. Currently only implements classes but can be adapted to functions if required. class should have method 'run_experiment' to be called on a go trial
+experiment : PercentCells
+
+
+#use this to set the different percentages to fire if using the percents experiment
+#group size is current hardcoded
+percents   : [90,70,50]
 
 
 

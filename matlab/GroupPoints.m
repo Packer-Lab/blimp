@@ -1,5 +1,5 @@
 function Points = GroupPoints(Points, inputParameters)
-%takes a points object and returns their group
+%takes a Points object and returns their group
 %JR 2019. meat by LR 2018
 
 onlyGroupWithinPlane = inputParameters.onlyGroupWithinPlane;

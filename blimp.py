@@ -5,6 +5,9 @@ from utils.prairie_interface import PrairieInterface
 import sys
 import os
 from datetime import datetime
+import time
+import matlab.engine
+
 import experiments
 
 
@@ -20,17 +23,11 @@ class Blimp(SLMsdk, PrairieInterface):
         yaml_path = os.path.join(base_path, "blimp_settings.yaml")
 
         with open(yaml_path, 'r') as stream:
-            yaml_dict = yaml.load(stream)
+            self.yaml_dict = yaml.load(stream)
         
-        self.naparm_path = yaml_dict['naparm_path']
-        self.output_path = yaml_dict['output_path']
-        
-        #get the experiment function defined in the yaml
-        try:  
-            self.experiment_func = getattr(experiments, yaml_dict['experiment'])
-        except:
-            raise Exception('Could not find experiment defined in yaml')
-        
+        self.points_path = self.yaml_dict['points_path']
+        self.output_path = self.yaml_dict['output_path']
+                
         self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
        
         
@@ -41,6 +38,15 @@ class Blimp(SLMsdk, PrairieInterface):
         # connect to the SLM
         #self.SLM_connect() 
         
+        #start the matlab engine
+        print('Initialising matlab engine')
+        self.eng = matlab.engine.start_matlab()
+        print('matlab engine initialised')
+        
+        # get the points object for all target points
+        points_obj = self.eng.PointsProcessor(self.points_path, 'processAll', 1)
+        self.all_points = points_obj['all_points']
+        
         # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
         self.SLM_tnums = []
         #the barcodes of the SLM trials 
@@ -49,7 +55,19 @@ class Blimp(SLMsdk, PrairieInterface):
         self.SLM_times = []
         
         self.run_time_prev = 0
-   
+        
+        #get the experiment function defined in the yaml
+        try:  
+            self.experiment_class = getattr(experiments, self.yaml_dict['experiment'])
+        except:
+            raise Exception('Could not find experiment defined in yaml')
+        
+
+        # inits the experiment class with Blimp attributes (this is probably a horrible way of doing this)
+        self.experiment = self.experiment_class(self)
+
+
+        
     def update(self, new_data, run_time):
         
         ''' called every time there is a new print, state or event in pycontrol '''
@@ -74,22 +92,23 @@ class Blimp(SLMsdk, PrairieInterface):
 
         # an SLM trial is initiated
         if 'SLM trial' in pycontrol_print:
-        
+            
+            self.trial_runtime = run_time
             # search the SLM trial string for the number and barcode
             space_split = pycontrol_print.split(' ')    
-            trial_number = [space_split[i+1] for i,word in enumerate(space_split) if word == 'Number'][0]
-            barcode = [space_split[i+1] for i,word in enumerate(space_split) if word == 'Barcode'][0]  
+            self.trial_number = [space_split[i+1] for i,word in enumerate(space_split) if word == 'Number'][0]
+            self.barcode = [space_split[i+1] for i,word in enumerate(space_split) if word == 'Barcode'][0]  
                    
             #append to the alignment lists                   
-            self.SLM_tnums.append(trial_number)
-            self.SLM_barcodes.append(barcode)           
-            self.SLM_times.append(run_time)
+            self.SLM_tnums.append(self.trial_number)
+            self.SLM_barcodes.append(self.barcode)           
+            self.SLM_times.append(self.trial_runtime)
             
             #write to the output file
-            self.write_output(run_time, trial_number, barcode)
+            self.write_output(self.trial_runtime, self.trial_number, self.barcode)
             
             # begin SLM trial    
-            self.experiment_func()           
+            self.experiment.run_experiment()           
     
     
     def write_output(self, time_stamp=None, trial_number=None, barcode=None):

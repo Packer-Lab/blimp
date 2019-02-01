@@ -20,9 +20,9 @@ v.reward_time = 60 # time that the solenoid is open during rewards (ms)
 v.d_prime_threshold = 2
 
 
-v.chanceSLM = 0.8 
-v.chanceLED = 0.4
-v.chanceNoGo = 0.2
+v.chanceSLM = 0.9 
+v.chanceLED = 0.1
+v.chanceNoGo = 0.1
 
     
 v.lick_window = 2.5  # reward time window during which mouse has to lick (s)
@@ -122,9 +122,9 @@ def trial_start(event):
             v.isNoGo = True
             
         if v.isSLM:
-            timed_goto_state('SLM_state', 2*second)
+            timed_goto_state('SLM_state', 1*second)
         else:
-            timed_goto_state('detect_lick_nogo', 2*second)
+            timed_goto_state('detect_lick_nogo', 1*second)
             
            
 
