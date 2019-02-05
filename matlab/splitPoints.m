@@ -32,6 +32,7 @@ end
 %grouping and centroids and add this info to the structure
 
 obj.split_points = ParseForMaskMaker(obj.split_points, obj.inputParameters);
+obj.split_points = ParseForMarkpoints(obj.split_points, obj.inputParameters);
 
 n_groups = max(obj.split_points.Group);
 
@@ -45,3 +46,9 @@ end
 obj.split_points.q = q;
 obj.split_points.PhaseMasks = PhaseMasks;
 obj.split_points.TransformedSLMTargets = TransformedSLMTargets;
+
+
+
+
+
+
