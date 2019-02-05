@@ -2,12 +2,12 @@ import numpy as np
 import os
 #import win32com.client
 
-class prairie_interface():
+class PrairieInterface():
 
     def __init__(self,**kw):
     
         '''class to drive PrairieView based on behavioural events '''
-        super(prairie_interface, self).__init__()
+        super(PrairieInterface, self).__init__()
         try:
             # Start PrairieLink
             self.pl = win32com.client.Dispatch('PrairieLink.Application')

@@ -1,0 +1,27 @@
+#the path to the points naparm .mat file containing cell locations
+naparm_path : /home/jamesrowland/Desktop/2019-01-22_nothing_NAPARM_007/
+
+# the path that the alignment files will be saved
+output_path : /home/jamesrowland/Documents/blimp_outputs
+
+# the experiment to run. Give the name of the class inside the experiment folder. Currently only implements classes but can be adapted to functions if required. class should have method 'run_experiment' to be called on a go trial
+experiment : PercentCells
+
+#use this to set the different percentages to fire if using the percents experiment
+#group size is current hardcoded
+percents   : [90,70,50]
+
+# the number of different random percent subsets to use throughout a PercentCells experiment (1 if same cells on every percent trial)
+num_subsets : 4
+
+#length of the stimulation spirals (ms) (assumed same across all spirals)
+duration : 20
+# number of spirals / shot
+num_spirals : 3
+
+spiral_revolutions : 5
+
+mWperCell : 6
+inter_group_interval : 50 #(ms) 
+
+
