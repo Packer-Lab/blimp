@@ -35,5 +35,5 @@ Points.Yv = LUTy(Ypx+1);
 % weirld formatted string so have to spilt
 gpl_struct = xml2struct(inputParameters.GPLpath);
 
-ss = split(gpl_struct.PVGalvoPointList.PVGalvoPoint.Attributes.SpiralSize, ' ');
+ss = split(gpl_struct.PVGalvoPointList.PVGalvoPoint{1, 1}.Attributes.SpiralSize, ' ');
 Points.SpiralSizeV = str2double(ss{1});
