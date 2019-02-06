@@ -27,10 +27,26 @@ Xpx = Points.centroid_x;
 Ypx = Points.centroid_y;
 
 
+% prevents error when converting pixel coordinates to voltages (JR)
+
+for i = 1:length(Xpx)
+    if Xpx(i) == 512
+        Xpx(i) = 511;
+    end
+    if Ypx(i) == 512
+        Ypx(i) = 511;
+    end
+end
+
+
 % convert pixel coordinates to voltages
+try
 Points.Xv = LUTx(Xpx+1);
 Points.Yv = LUTy(Ypx+1);
-
+catch
+    keyboard
+end
+    
 % load the apl to get spiral size out
 % weirld formatted string so have to spilt
 gpl_struct = xml2struct(inputParameters.GPLpath);
