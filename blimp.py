@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 import time
 import matlab.engine
-
+from pathlib import Path
 import experiments
 
 
@@ -42,7 +42,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         self.inter_group_interval = self.yaml_dict['inter_group_interval']
         
         # initialise the SLM sdk and prarie interface, inheriting attributes from these classses
-        #SLMsdk.__init__(self)
+        SLMsdk.__init__(self)
         PrairieInterface.__init__(self)
         ParseMarkpoints.__init__(self)
         # connect to the SLM
@@ -54,7 +54,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         print('matlab engine initialised')
         
         # get the points object for all target points
-        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1)
+        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', 5)
         self.all_points = points_obj['all_points']
         self.spiral_size = self.all_points['SpiralSizeV']
         

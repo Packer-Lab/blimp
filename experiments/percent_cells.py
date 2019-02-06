@@ -34,9 +34,14 @@ class PercentCells():
         
         self.markpoints_strings = self.get_markpoints_strings()
         
-        print(self.markpoints_strings[0])
         
         print('Percent files built successfully')
+        
+        print(self.markpoints_strings[0])
+        
+        self.Blimp.pl.SendScriptCommands(self.markpoints_strings[0])
+            
+          
         
     def get_markpoints_strings(self): 
         
@@ -44,7 +49,7 @@ class PercentCells():
 
         for percent, path in zip(self.percents, self.percent_paths):
         
-            point_obj = self.Blimp.eng.PointsProcessor(self.Blimp.naparm_path, 'processAll', 0, 'splitPoints', 1, 'splitPercent', float(percent), 'Save', 1, 'SavePath', path)
+            point_obj = self.Blimp.eng.PointsProcessor(self.Blimp.naparm_path, 'processAll', 0, 'GroupSize', 10, 'splitPoints', 1, 'splitPercent', float(percent), 'Save', 1, 'SavePath', path)
                   
             split_obj = point_obj['split_points']
             
@@ -57,8 +62,6 @@ class PercentCells():
             group_list = []
             
             for group in range(num_groups):
-            
-                split_obj['points_array']
                 
                 #the shape of the point array shows the group size
                 group_size = np.asarray(split_obj['points_array'][group]).shape[0]
@@ -68,7 +71,7 @@ class PercentCells():
                               
                 # string for each group is nested in list for each percent
                 group_string = self.Blimp.build_strings(X = galvo_x[group], Y = galvo_y[group], duration = self.Blimp.duration, laser_power = pv_power, is_spiral = 'true',\
-                spiral_revolutions = self.Blimp.spiral_revolutions, spiral_size = self.Blimp.spiral_size)
+                spiral_revolutions = self.Blimp.spiral_revolutions, spiral_size = self.Blimp.spiral_size, num_spirals = self.Blimp.num_spirals)
                 
                 group_list.append(group_string)
                 
@@ -96,13 +99,7 @@ class PercentCells():
         
         print('Stimming {}% of cells'.format(percent_run))
         
-       
-        
-        
-        
-        
-        
-        
+
         
         save_str = 'Percent cells experiment, stimulating {}% of cells. Naparm path is {}'.format(percent_run, trial_path)
         self.Blimp.write_output(self.Blimp.trial_runtime, self.Blimp.trial_number, self.Blimp.barcode, save_str)

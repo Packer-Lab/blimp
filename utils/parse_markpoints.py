@@ -91,7 +91,7 @@ class ParseMarkpoints():
         settings_string = '{0} {1} {2} {3} {4} {5} {6} {7} 0.12 '.format(self.X,self.Y,self.duration,'Uncaging',self.laser_power,self.is_spiral,self.spiral_size,self.spiral_revolutions)
     
         #repeat num spirals times
-        markpoints_string = settings_string * int(self.spiral_revolutions)
+        markpoints_string = settings_string * int(self.num_spirals)
         
         #snip the inter-spiral-delay off the last point and add the markpoints command
         markpoints_string  = '-mp ' + markpoints_string[:-6]
