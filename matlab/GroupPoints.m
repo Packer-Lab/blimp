@@ -13,7 +13,9 @@ if ~strcmp(GroupSize, 'all')
     NumGroups = numPoints / GroupSize;
     
     if ceil(NumGroups) ~= floor(NumGroups)
-        error('Sorry have currently only implemented even group size (JR)')
+        disp(['This group size would require ' num2str(NumGroups) ' groups']) 
+        NumGroups = ceil(NumGroups);
+        disp(['Correcting to use ' num2str(NumGroups) ' groups'])     
     end
     
 end
