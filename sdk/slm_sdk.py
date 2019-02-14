@@ -114,12 +114,17 @@ class SLMsdk():
         self.Set_true_frames_func(self.sdk, true_frames)
         
     
-    def load_mask(self, mask):
+    def load_mask(self, mask, wait_for_trigger = False):
     
         '''loads the phase mask specified in 'mask' to the SLM'''
         
         mask = imageio.imread(mask)
-        self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 0, 0)
+        
+        if wait_for_trigger:
+            self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 1, 0)
+        else:
+            self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 0, 0)
+
         
     def SLM_disconnect(self):
         
