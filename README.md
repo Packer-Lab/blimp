@@ -6,7 +6,11 @@ includes a fork of pycontrol, developed by Thomas Akam and available at: https:/
 Requirements:
 
 Python 3x
+
 Matlab 2018b or later is required if using python 3.7
 
-The matlab engine must be compiled for use, to do this cd to matlabroot/extern/engines/python and run: 'python setup.py'
+The matlab engine must be compiled for use.
+
+To do this cd to matlabroot/extern/engines/python and run: 'python setup.py'
+
 matlabroot can be found by entering matlabroot into matlab command line.
