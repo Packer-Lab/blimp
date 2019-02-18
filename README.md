@@ -5,7 +5,7 @@ includes a fork of pycontrol, developed by Thomas Akam and available at: https:/
 
 Requirements:
 
-Python 3x
+Python 3x, Matlab
 
 Matlab 2018b or later is required if using python 3.7
 
