@@ -11,6 +11,6 @@ Currently does not work with python versions later than 3.6
 
 The matlab engine must be compiled for use.
 
-To do this cd to matlabroot/extern/engines/python and run: 'python setup.py'
+To do this cd as admin to matlabroot/extern/engines/python and run: 'python setup.py install'
 
 matlabroot can be found by entering matlabroot into matlab command line.
