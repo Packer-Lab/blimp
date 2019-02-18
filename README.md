@@ -14,3 +14,5 @@ The matlab engine must be compiled for use.
 To do this cd as admin to matlabroot/extern/engines/python and run: 'python setup.py install'
 
 matlabroot can be found by entering matlabroot into matlab command line.
+
+Add blimp recursively to the matlab path in startup.m using addpath(genpath(path/to/blimp/)) 
