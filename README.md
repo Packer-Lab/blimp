@@ -5,9 +5,9 @@ includes a fork of pycontrol, developed by Thomas Akam and available at: https:/
 
 Requirements:
 
-Python 3x, Matlab
+Python 3x, Matlab 2018b or later
 
-Matlab 2018b or later is required if using python 3.7
+Currently does not work with python versions later than 3.6
 
 The matlab engine must be compiled for use.
 
