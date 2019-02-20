@@ -71,6 +71,18 @@ class SLMsdk():
         self.Write_overdrive_image_func = self.slm_lib.Write_overdrive_image
         self.Write_overdrive_image_func.argtypes = (c_longlong, c_int, POINTER(c_ubyte), c_bool, c_bool)
 
+        self.Calculate_transient_frames_func = self.slm_lib.Calculate_transient_frames
+        self.Calculate_transient_frames_func.argtypes = (c_longlong, POINTER(c_ubyte), POINTER(c_uint))
+        self.Calculate_transient_frames_func.restype = c_bool
+        
+        self.Retrieve_transient_frames_func = self.slm_lib.Retrieve_transient_frames
+        self.Retrieve_transient_frames_func.argtypes = (c_longlong, POINTER(c_ubyte))
+        self.Retrieve_transient_frames_func.restype = c_bool
+        
+        self.Write_transient_frames_func = self.slm_lib.Write_transient_frames
+        self.Write_transient_frames_func.argtypes = (c_longlong, c_int, POINTER(c_ubyte), c_bool, c_bool, c_uint)
+        self.Write_transient_frames_func.restype = c_bool
+
         self.Delete_SDK_func = self.slm_lib.Delete_SDK
         #for some reason giving this function an extra argument makes it work
         self.Delete_SDK_func.argtypes = (c_longlong, c_bool)
@@ -124,6 +136,57 @@ class SLMsdk():
             self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 1, 0)
         else:
             self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 0, 0)
+            
+            
+            
+    
+    def precalculate_then_triggered_write(self, mask_folder, num_repeats = 1):
+        
+        tiff_list = [os.path.join(mask_folder,file) for file in os.listdir(mask_folder) if file.endswith('.tiff') or file.endswith('.tif')]
+        print('{} tiffs found'.format(len(tiff_list)))
+        mask_list = [imageio.imread(tiff) for tiff in tiff_list]
+        #list of pointers to locations of phase mask arrays in memory 
+        mask_pointers = [mask.ctypes.data_as(POINTER(c_ubyte)) for mask in mask_list]
+    
+        #counts how many bytes required to store mask. Initial value set here is ignored and overwritten by Calculate_transient_frames_func
+        byte_count = c_uint(0)
+
+        precalc_arrays = []
+                        
+        # set to false if errors in mask writing 
+        okay = True
+        
+        for pt in mask_pointers:
+    
+            if okay:
+                # precalculate frames and save them to memory
+                okay = self.Calculate_transient_frames_func(self.sdk, pt, byte_count)
+           
+            if okay:
+                # empty character array to store precalculated frame
+                precalc_array = (c_ubyte * byte_count.value)()   
+                
+                # retrieve the precaulated frames as an unsigned character array
+                okay = self.Retrieve_transient_frames_func(self.sdk, precalc_array)                            
+                precalc_arrays.append(precalc_array)
+            
+            assert okay, 'Error writing precalculated frames to memory'
+
+        #write triggered masks to SLM
+        for _ in range(num_repeats):
+        
+            for i, arr in enumerate(precalc_arrays):
+                
+                if okay:
+                
+                    if i == 0: print('ready to trigger')
+                    
+                    okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
+                    
+                    print('loaded mask {}'.format(i))
+
+                assert okay, 'Failed to write frames to board'
+        
 
         
     def SLM_disconnect(self):

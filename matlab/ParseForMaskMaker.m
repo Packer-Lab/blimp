@@ -3,7 +3,7 @@ function Points = ParseForMaskMaker(Points, inputParameters)
 % also calculates offset points and centroids to avoid zob
 
 Points = GroupPoints(Points, inputParameters);
-Points = ComputeGroupCentroids(Points);
+Points = ComputeGroupCentroids_JR(Points);
 
 %points array in the form required by SLMPhaseMaskMaker
 %offset targets used to avoid zob

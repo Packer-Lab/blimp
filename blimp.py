@@ -13,11 +13,9 @@ import experiments
 
 
 class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
-
-    '''detailed description goes here'''
     
     def __init__(self):
-
+        '''detailed description goes here'''
         #load yaml
         base_path = os.path.dirname(__file__)
         yaml_path = os.path.join(base_path, "blimp_settings.yaml")
@@ -30,6 +28,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         self.naparm_path = self.yaml_dict['naparm_path']
         output_path = self.yaml_dict['output_path']
   
+        self.mask_path = os.path.join(self.naparm_path, 'PhaseMasks')
         self.output_folder = os.path.join(output_path, self.time_now)
         
         if not os.path.exists(self.output_folder):
@@ -52,17 +51,17 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         print('Initialising matlab engine')
         self.eng = matlab.engine.start_matlab()
         print('matlab engine initialised')
-        
+
         # get the points object for all target points
-        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', 5)
+        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', 6)
         self.all_points = points_obj['all_points']
         self.spiral_size = self.all_points['SpiralSizeV']
         
         # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
         self.SLM_tnums = []
-        #the barcodes of the SLM trials 
+        # the barcodes of the SLM trials 
         self.SLM_barcodes = []
-        #the times of the SLM trials
+        # the times of the SLM trials
         self.SLM_times = []
         
         self.run_time_prev = 0
@@ -121,9 +120,13 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             #self.write_output(self.trial_runtime, self.trial_number, self.barcode)
             
             # begin SLM trial    
-            self.experiment.run_experiment()           
-    
-    
+            self.experiment.run_experiment() 
+
+
+    def update_test(self):
+        '''development function to test the update function called from pc'''
+        self.experiment.run_experiment() 
+
     def write_output(self, time_stamp=None, trial_number=None, barcode=None, info=None):
       
         #the txtfile to write alignent information to

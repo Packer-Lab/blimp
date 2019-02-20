@@ -1,10 +1,10 @@
-duration: 500
+duration: 2000
 experiment: AllCells
 inter_group_interval: 50
-mWperCell: 10
-naparm_path: F:\Data\rlees\2019-02-04\NAPARM\2019-02-04_J007_NAPARM_001
+mWperCell: 6
+naparm_path: F:\Data\jrowland\2019-02-20\naparm\2019-01-20_blimpTest_011
 num_spirals: 1
 num_subsets: 1
-output_path: F:\Data\jrowland\2019-02-06\blimp
+output_path: F:\Data\jrowland\2019-02-20\blimp
 percents: [90, 50]
 spiral_revolutions: 5

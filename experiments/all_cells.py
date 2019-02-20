@@ -38,10 +38,16 @@ class AllCells():
             group_list.append(group_string)
                 
         #merge each group into a single string
-        all_groups = self.Blimp.groups_strings(self.Blimp.inter_group_interval, group_list)
+        self.all_groups_mp = self.Blimp.groups_strings(self.Blimp.inter_group_interval, group_list)
+        
+        
+    def run_experiment(self):
 
-        self.Blimp.pl.SendScriptCommands(all_groups)
-
+        # might need to thread this
+        self.mp_output = self.Blimp.pl.SendScriptCommands(self.all_groups_mp)
+        
+        #self.Blimp.Precalculate_then_triggered_write(
+        
         
 
 
