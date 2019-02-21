@@ -1,7 +1,7 @@
 import numpy as np
 import yaml
 from sdk.slm_sdk import SLMsdk
-#from utils.prairie_interface import PrairieInterface
+from utils.prairie_interface import PrairieInterface
 from utils.parse_markpoints import ParseMarkpoints
 import sys
 import os
@@ -11,9 +11,7 @@ import matlab.engine
 from pathlib import Path
 import experiments
 
-
-#class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
-class Blimp(SLMsdk, ParseMarkpoints):
+class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
     def __init__(self):
         '''detailed description goes here'''
         #load yaml
@@ -27,9 +25,8 @@ class Blimp(SLMsdk, ParseMarkpoints):
         self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
         
         self.naparm_path = yaml_dict['naparm_path']
-        output_path = yaml_dict['output_path']
-  
-        self.mask_path = os.path.join(self.naparm_path, 'PhaseMasks')
+        output_path = yaml_dict['output_path'] 
+        
         self.output_folder = os.path.join(output_path, self.time_now)
         
         if not os.path.exists(self.output_folder):
@@ -47,11 +44,11 @@ class Blimp(SLMsdk, ParseMarkpoints):
         self.spiral_size = yaml_dict['spiral_size'] / (yaml_dict['FOVsize_UM_1x'] / yaml_dict['zoom'])
         
         # initialise the SLM sdk and prarie interface, inheriting attributes from these classses
-        #SLMsdk.__init__(self)
-        #PrairieInterface.__init__(self)
+        SLMsdk.__init__(self)
+        PrairieInterface.__init__(self)
         ParseMarkpoints.__init__(self)
         # connect to the SLM
-        #self.SLM_connect() 
+        self.SLM_connect() 
         
         #start the matlab engine
         print('Initialising matlab engine')
@@ -59,7 +56,7 @@ class Blimp(SLMsdk, ParseMarkpoints):
         print('matlab engine initialised')
 
         # get the points object for all target points
-        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size)
+        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
         self.all_points = points_obj['all_points']
         
         # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)

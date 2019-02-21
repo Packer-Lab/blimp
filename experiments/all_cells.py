@@ -4,6 +4,9 @@ import os
 import time
 import random
 import numpy as np
+from threading import Thread
+import tifffile
+import imageio
 
 class AllCells():
 
@@ -45,13 +48,26 @@ class AllCells():
         self.all_groups_mp = self.Blimp.groups_strings(self.Blimp.inter_group_interval, group_list, SLM_trigger = True)
         
         
-    def run_experiment(self):  
-        pass
-
-        # might need to thread this
-        #self.mp_output = self.Blimp.pl.SendScriptCommands(self.all_groups_mp)
+        #init numpy arrays from tiffs
+        mask_path = os.path.join(self.Blimp.output_folder, 'PhaseMasks')
+        tiff_list = [os.path.join(mask_path,file) for file in os.listdir(mask_path) if file.endswith('.tiff') or file.endswith('.tif')]
+        self.mask_list = [tifffile.imread(tiff) for tiff in tiff_list]
+ 
+        print('{} Phase mask tiffs found'.format(len(tiff_list)))
         
-        #elf.Blimp.Precalculate_then_triggered_write(
+        
+    def run_experiment(self):  
+        
+
+        #arrays of precaculated frame locations in memory
+        self.repeat_arrays = self.Blimp.precalculate_and_load_first(self.mask_list)
+        
+        ##thread so pycontrol does not stall
+        slm_thread = Thread(target=self.Blimp.load_precalculated_triggered, args = [self.repeat_arrays])
+        slm_thread.start()
+        
+        self.mp_output = self.Blimp.pl.SendScriptCommands(self.all_groups_mp)
+        
         
         
 

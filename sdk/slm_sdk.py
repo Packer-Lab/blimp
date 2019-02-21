@@ -1,10 +1,9 @@
 import os
 from ctypes import *
-from time import sleep
+import time
 import sys
-import imageio
 import numpy as np
-
+import imageio
 class SLMsdk():
 
     def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = "512white.bmp"):
@@ -140,11 +139,9 @@ class SLMsdk():
             
             
     
-    def precalculate_then_triggered_write(self, mask_folder, num_repeats = 1):
+    def precalculate_and_load_first(self, mask_list, num_repeats = 1):
         
-        tiff_list = [os.path.join(mask_folder,file) for file in os.listdir(mask_folder) if file.endswith('.tiff') or file.endswith('.tif')]
-        print('{} tiffs found'.format(len(tiff_list)))
-        mask_list = [imageio.imread(tiff) for tiff in tiff_list]
+        '''takes input mask_list, a list of numpy arrays containing phase masks'''
         
         #list of pointers to locations of phase mask arrays in memory 
         mask_pointers = [mask.ctypes.data_as(POINTER(c_ubyte)) for mask in mask_list]
@@ -175,24 +172,34 @@ class SLMsdk():
 
         #repeat the precalculated list
         repeat_arrays = precalc_arrays * num_repeats        
+
+        okay = self.Write_transient_frames_func(self.sdk, c_int(1), repeat_arrays[0], c_bool(0), c_bool(1), c_uint(0))       
+        assert okay, 'Failed to write first frame to board'     
+        print('First mask loaded')
+
+        return repeat_arrays
+
+      
+    def load_precalculated_triggered(self, repeat_arrays):
         
-        #write triggered masks to SLM              
+        okay = True
+        #write triggered masks to SLM     
+            
+        print('Ready to trigger')
         for i, arr in enumerate(repeat_arrays):
 
             assert okay, 'Failed to write frames to board'
          
-            #load the first frame without triggering
-            if i == 0:
-                print('loading first mask')
-                okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(0), c_uint(0))
-                print('ready to trigger remaining masks')
+            #the first frame should be already loaded
+            if i == 0: continue
                 
             #trigger remaining frames
-            else:
-                okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
-                print('Trigger recieved, loaded mask {}'.format(i))
-        
-
+            
+            okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
+            print('Trigger recieved, loaded mask {}'.format(i))
+            
+        print('completed trigger sequence')
+                
         
     def SLM_disconnect(self):
         

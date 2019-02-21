@@ -1,18 +1,14 @@
-duration: 2000
+FOVsize_UM_1x: 1000
+duration: 300
 experiment: AllCells
-inter_group_interval: 50
+group_size: 6
+inter_group_interval: 30
 mWperCell: 6
-naparm_path: /home/jamesrowland/Desktop/2019-02-04_J007_NAPARM_001
+naparm_path: F:\Data\jrowland\2019-02-21\naparm\2019-02-21_blimpTest_001
 num_spirals: 1
 num_subsets: 1
-output_path: /home/jamesrowland/Documents/blimp_outputs
-naparm_yaml_path: /home/jamesrowland/Documents/Code/SLM_bruker1/settings.yml
+output_path: F:\Data\jrowland\2019-02-21\blimp
 percents: [90, 50]
-#hi
 spiral_revolutions: 5
-zoom: 2
-group_size: 40
-
-FOVsize_UM_1x: 537.4
-FOVsize_OpticalZoom: 1.14
-spiral_size: 15 #um
+spiral_size: 3
+zoom: 4

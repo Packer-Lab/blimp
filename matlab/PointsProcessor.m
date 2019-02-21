@@ -7,14 +7,11 @@ warning off;
 p = inputParser;
 p.addParameter('onlyGroupWithinPlane', true);
 p.addParameter('GroupSize', 'all');
-
 %whether to make phase masks for all points based on GroupSize etc
 p.addParameter('processAll', false);
-
 %whether to run a splitpoints experiment
 p.addParameter('splitPoints',false);
 p.addParameter('splitPercent', []);
-
 p.addParameter('Save', false);
 p.addParameter('SavePath', []);
 
@@ -23,7 +20,6 @@ gpl_path = dir(fullfile(naparm_path, '*.gpl'));
 
 p.addParameter('PointsPath', strcat(points_path.folder, '/', points_path.name));
 p.addParameter('GPLpath', strcat(gpl_path.folder, '/', gpl_path.name));
-
 parse(p, varargin{:});
 
 
@@ -53,7 +49,7 @@ if obj.inputParameters.splitPoints
     if isempty(obj.inputParameters.splitPercent)
         error('need to provide percentage to keep if splitting points')
     end
-     
+    
     obj = splitPoints(obj);
     
 end

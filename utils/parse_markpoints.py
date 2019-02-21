@@ -158,12 +158,12 @@ class ParseMarkpoints():
         
         elif stim_type == 'trigger':
         
-            trigger_len = 1 #ms
+            trigger_len = 5 #ms
             
             #how long to delay between trigger and next spiral
             delay = inter_group_interval - trigger_len - 0.12   
                     
-            return '{0} {1} {2} {3} {4} {5} {6} '.format(0.12, x, y, trigger_len, 'Trigger', '0', delay)
+            return '{0} {1} {2} {3} {4} {5} {6} '.format(0.12, x, y, trigger_len, 'Trigger', 1000, delay)
             
         else:
             raise ValueError('misc stimulus type not recognised')

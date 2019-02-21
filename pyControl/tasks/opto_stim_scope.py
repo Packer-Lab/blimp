@@ -137,7 +137,7 @@ def SLM_state(event):
         print('SLM trial Number {0} Barcode {1}'.format(v.num_SLM, trial_barcode))
         
         
-        timed_goto_state('trial_start', 1*second)
+        timed_goto_state('trial_start', 5*second)
         
 
         
