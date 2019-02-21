@@ -1,7 +1,7 @@
 import numpy as np
 import yaml
 from sdk.slm_sdk import SLMsdk
-from utils.prairie_interface import PrairieInterface
+#from utils.prairie_interface import PrairieInterface
 from utils.parse_markpoints import ParseMarkpoints
 import sys
 import os
@@ -12,8 +12,8 @@ from pathlib import Path
 import experiments
 
 
-class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
-    
+#class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
+class Blimp(SLMsdk, ParseMarkpoints):
     def __init__(self):
         '''detailed description goes here'''
         #load yaml
@@ -21,12 +21,13 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         yaml_path = os.path.join(base_path, "blimp_settings.yaml")
 
         with open(yaml_path, 'r') as stream:
-            self.yaml_dict = yaml.load(stream)
-            
+            yaml_dict = yaml.load(stream)
+        
+        
         self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
         
-        self.naparm_path = self.yaml_dict['naparm_path']
-        output_path = self.yaml_dict['output_path']
+        self.naparm_path = yaml_dict['naparm_path']
+        output_path = yaml_dict['output_path']
   
         self.mask_path = os.path.join(self.naparm_path, 'PhaseMasks')
         self.output_folder = os.path.join(output_path, self.time_now)
@@ -34,15 +35,20 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
             
-        self.duration = self.yaml_dict['duration']
-        self.num_spirals = self.yaml_dict['num_spirals']
-        self.spiral_revolutions = self.yaml_dict['spiral_revolutions']
-        self.mWperCell = self.yaml_dict['mWperCell']
-        self.inter_group_interval = self.yaml_dict['inter_group_interval']
+        self.group_size = yaml_dict['group_size']
+        
+        self.duration = yaml_dict['duration']
+        self.num_spirals = yaml_dict['num_spirals']
+        self.spiral_revolutions = yaml_dict['spiral_revolutions']
+        self.mWperCell = yaml_dict['mWperCell']
+        self.inter_group_interval = yaml_dict['inter_group_interval']
+        
+        #calculate spiral size as 0-1 ratio of fov size
+        self.spiral_size = yaml_dict['spiral_size'] / (yaml_dict['FOVsize_UM_1x'] / yaml_dict['zoom'])
         
         # initialise the SLM sdk and prarie interface, inheriting attributes from these classses
-        SLMsdk.__init__(self)
-        PrairieInterface.__init__(self)
+        #SLMsdk.__init__(self)
+        #PrairieInterface.__init__(self)
         ParseMarkpoints.__init__(self)
         # connect to the SLM
         #self.SLM_connect() 
@@ -53,9 +59,8 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         print('matlab engine initialised')
 
         # get the points object for all target points
-        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', 6)
+        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size)
         self.all_points = points_obj['all_points']
-        self.spiral_size = self.all_points['SpiralSizeV']
         
         # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
         self.SLM_tnums = []
@@ -68,14 +73,13 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         
         #get the experiment function defined in the yaml
         try:  
-            self.experiment_class = getattr(experiments, self.yaml_dict['experiment'])
+            self.experiment_class = getattr(experiments, yaml_dict['experiment'])
         except:
             raise Exception('Could not find experiment defined in yaml')
         
 
         # inits the experiment class with Blimp attributes (this is probably a horrible way of doing this)
         self.experiment = self.experiment_class(self)
-
 
         
     def update(self, new_data, run_time):
@@ -90,9 +94,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         if run_time < self.run_time_prev:
             self.__init__()
         
-        self.run_time_prev = run_time
-        
-        
+        self.run_time_prev = run_time        
       
         # break function if no new print statement is found
         if pycontrol_print:
@@ -124,7 +126,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
 
 
     def update_test(self):
-        '''development function to test the update function called from pc'''
+        '''development function to test the update function called from pycontrol'''
         self.experiment.run_experiment() 
 
     def write_output(self, time_stamp=None, trial_number=None, barcode=None, info=None):

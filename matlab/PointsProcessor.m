@@ -43,7 +43,7 @@ obj.inputParameters = p.Results;
 
 if obj.inputParameters.processAll
     
-    %build phase massks from all the points
+    %build phase masks from all the points
     obj = processAllPoints(obj);
     
 end

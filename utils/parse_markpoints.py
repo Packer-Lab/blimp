@@ -75,7 +75,7 @@ class ParseMarkpoints():
             self.durations.pop(0)
             self.initial_delays.pop(0)
             self.repetitions.pop(0)
-            
+        
         
     def build_strings(self, **kwargs):
     
@@ -86,24 +86,27 @@ class ParseMarkpoints():
             
         markpoints_strings = []
         
-        
-        #check this against PV documentaion, probably shouldn't have the 'spiral_revolution' argument here
-        settings_string = '{0} {1} {2} {3} {4} {5} {6} {7} 0.12 '.format(self.X,self.Y,self.duration,'Uncaging',self.laser_power,self.is_spiral,self.spiral_size,self.spiral_revolutions)
-    
+        settings_string = '{0} {1} {2} {3} {4} {5} {6} {7} 0.12 '.format(self.X,self.Y,self.duration, \
+                                                                        'Uncaging', self.laser_power, self.is_spiral, \
+                                                                        self.spiral_size, self.spiral_revolutions)    
         #repeat num spirals times
         markpoints_string = settings_string * int(self.num_spirals)
         
-        #snip the inter-spiral-delay off the last point and add the markpoints command
-        markpoints_string  = '-mp ' + markpoints_string[:-6]
+        #snip the inter-spiral-delay off the last point and add the markpoints command at the start
+        markpoints_string  = '-mp ' + markpoints_string[:-5]
+        #Rmarkpoints_string = markpoints_string + ' \n'
                    
         return markpoints_string
         
         
-    def groups_strings(self,inter_group_interval, group_list):
+    def groups_strings(self,inter_group_interval, group_list, SLM_trigger=False):
     
         '''
         takes an input of n_groups length markpoints_string list and concatenates to one markpoints command string
-        groups are stimmed with an interval os inter_group_interval (ms)     
+        groups are stimmed with an interval os inter_group_interval (ms)
+        
+        Set SLM_trigger to True to add a trigger "laser" string in between stimulation strings. This sends a 5V to the SLM to trigger
+        a phase mask change.     
                   
         '''
         
@@ -113,30 +116,58 @@ class ParseMarkpoints():
      
         all_groups = ''
         
-        for ind, group in enumerate(group_list):
+        for idx, group in enumerate(group_list):
                      
             #pop off the -mp from all groups following group 1
-            if ind != 0:
+            if idx != 0:
                 group = group[4:]
             
             all_groups += group
             
-            if ind != n_groups-1:
-                all_groups += ' ' + str(inter_group_interval) + ' '
-                
+            # add the inter group interval if it is not the final group
+            if idx != n_groups-1 and not SLM_trigger:
+                            
+                all_groups += ' ' + str(inter_group_interval) + ' '     
             
+            elif idx !=n_groups-1 and SLM_trigger:     
+            
+                #the x and y values of the group just stimmed
+                x = (group.split(' ')[1] if idx == 0 else group.split(' ')[0])
+                y = (group.split(' ')[2] if idx == 0 else group.split(' ')[1])
+                
+                trigger_string = self.misc_stims(x, y, 'trigger', inter_group_interval=inter_group_interval)
+                all_groups += trigger_string
+                
+                               
         return all_groups
-        
-        
+
+
+    def misc_stims(self, x, y, stim_type, inter_group_interval=None):
     
-    
-    def build_dummy(self, **kwargs):
+        '''
+           used to build an intial dummy string (set stim_type to dummy) or a trigger "laser" pulse           
+           (set stim_type to trigger)
+           
+           currently uses a 1ms pulse duration for triggering with a 0.12ms delay
+           add the inter_group_interval argument if using triggers 
+           
+        '''
         
-        for k,v in kwargs.items():
-            setattr(self,k,v)
+        if stim_type == 'dummy':       
+            return '-MarkPoints {0} {1} {2} {3} {4}'.format(x, y, '1', 'Uncaging', '0')
         
-    
-        return '-MarkPoints {0} {1} {2} {3} {4} {5} {6} {7}'.format(self.Xs[0], self.Ys[0], '1', 'Uncaging', '0', 'True', '1', '1')
+        elif stim_type == 'trigger':
+        
+            trigger_len = 1 #ms
+            
+            #how long to delay between trigger and next spiral
+            delay = inter_group_interval - trigger_len - 0.12   
+                    
+            return '{0} {1} {2} {3} {4} {5} {6} '.format(0.12, x, y, trigger_len, 'Trigger', '0', delay)
+            
+        else:
+            raise ValueError('misc stimulus type not recognised')
+        
             
             
         

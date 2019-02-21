@@ -1,7 +1,7 @@
 function obj = processAllPoints(obj)
 
 obj.all_points = ParseForMaskMaker(obj.all_points, obj.inputParameters);
-obj.all_points = ParseForMarkpoints(obj.all_points, obj.inputParameters);
+%obj.all_points = ParseForMarkpoints(obj.all_points, obj.inputParameters);
 numGroups = obj.all_points.numGroups;
 
 PhaseMasks = cell(numGroups, 1);

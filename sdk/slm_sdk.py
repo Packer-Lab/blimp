@@ -145,6 +145,7 @@ class SLMsdk():
         tiff_list = [os.path.join(mask_folder,file) for file in os.listdir(mask_folder) if file.endswith('.tiff') or file.endswith('.tif')]
         print('{} tiffs found'.format(len(tiff_list)))
         mask_list = [imageio.imread(tiff) for tiff in tiff_list]
+        
         #list of pointers to locations of phase mask arrays in memory 
         mask_pointers = [mask.ctypes.data_as(POINTER(c_ubyte)) for mask in mask_list]
     
@@ -172,20 +173,24 @@ class SLMsdk():
             
             assert okay, 'Error writing precalculated frames to memory'
 
-        #write triggered masks to SLM
-        for _ in range(num_repeats):
+        #repeat the precalculated list
+        repeat_arrays = precalc_arrays * num_repeats        
         
-            for i, arr in enumerate(precalc_arrays):
-                
-                if okay:
-                
-                    if i == 0: print('ready to trigger')
-                    
-                    okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
-                    
-                    print('loaded mask {}'.format(i))
+        #write triggered masks to SLM              
+        for i, arr in enumerate(repeat_arrays):
 
-                assert okay, 'Failed to write frames to board'
+            assert okay, 'Failed to write frames to board'
+         
+            #load the first frame without triggering
+            if i == 0:
+                print('loading first mask')
+                okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(0), c_uint(0))
+                print('ready to trigger remaining masks')
+                
+            #trigger remaining frames
+            else:
+                okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
+                print('Trigger recieved, loaded mask {}'.format(i))
         
 
         
