@@ -3,7 +3,7 @@ warnings.filterwarnings("ignore")
 import time
 import os
 import sys
-sys.path.append(r'C:\Users\User\Documents\Code\blimp')
+sys.path.append("..")
 from utils.parse_markpoints import ParseMarkpoints
 from utils.prairie_interface import PrairieInterface
 from utils import mat_loader as ml
@@ -17,8 +17,6 @@ import matplotlib.pyplot as plt
 from threading import Thread
 from pyfiglet import Figlet
 
-# output sampling rate of naparm
-naparm_path = r'F:\Data\jrowland\2019-03-08\naparm\2019-03-08_plasticSlide_NAPARM_008'
 
 class auto_naparm(ParseMarkpoints, PrairieInterface):
     
