@@ -58,7 +58,12 @@ class ParseMarkpoints():
         for elem in xml.iter():
 
             if elem.tag == 'PVMarkPointElement':
-                self.laser_powers.append(elem.attrib['UncagingLaserPower'])
+            
+                #hardcoded for now from naparm yaml
+                LaserPowerScaleFactor =  5
+                xml_power = elem.attrib['UncagingLaserPower']
+                blimp_power = float(xml_power) * (1000/LaserPowerScaleFactor);
+                self.laser_powers.append(str(blimp_power))
                 self.repetitions.append(elem.attrib['Repetitions'])
                 
             elif elem.tag == 'PVGalvoPointElement':
@@ -68,7 +73,7 @@ class ParseMarkpoints():
                 
                
         #detect if a dummy point has been sent and remove it if so
-        if self.laser_powers[0] == '0':
+        if self.laser_powers[0] == '0.0':
             self.dummy = True
             self.laser_powers.pop(0)
             self.spiral_revolutions.pop(0)
@@ -141,11 +146,11 @@ class ParseMarkpoints():
         # repeat this string if required (uses trigger galvo position of last group in repeat
         if n_repeats > 1:
             repeat_string = trigger_string + all_groups[4:]
-            all_groups = all_groups + (repeat_string * n_repeats) 
+            all_groups = all_groups + (repeat_string * (n_repeats-1)) 
           
         #get rid of random space on end
         all_groups = all_groups[:-1]
-          
+
         return all_groups
 
     def misc_stims(self, x, y, stim_type, inter_group_interval=None):

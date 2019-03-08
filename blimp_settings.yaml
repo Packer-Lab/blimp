@@ -7,8 +7,8 @@ mWperCell: 6
 naparm_path: F:\Data\jrowland\2019-02-21\naparm\2019-02-21_blimpTest_001
 num_spirals: 1
 num_subsets: 1
-output_path: F:\Data\jrowland\2019-02-21\blimp
+output_path: F:\Data\jrowland\2019-03-08\blimp
 percents: [90, 50]
 spiral_revolutions: 5
-spiral_size: 3
-zoom: 4
+spiral_size: 15
+zoom: 2

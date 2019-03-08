@@ -4,6 +4,7 @@ import time
 import sys
 import numpy as np
 import imageio
+import tifffile
 class SLMsdk():
 
     def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = "512white.bmp"):
@@ -129,7 +130,7 @@ class SLMsdk():
     
         '''loads the phase mask specified in 'mask' to the SLM'''
         
-        mask = imageio.imread(mask)
+        mask = tifffile.imread(mask)
         
         if wait_for_trigger:
             self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 1, 0)
