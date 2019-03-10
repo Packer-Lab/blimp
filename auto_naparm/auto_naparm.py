@@ -16,6 +16,20 @@ import tifffile
 import matplotlib.pyplot as plt
 from threading import Thread
 from pyfiglet import Figlet
+import time
+
+from asciimatics.effects import Stars, Print
+from asciimatics.particles import RingFirework, SerpentFirework, StarFirework, \
+    PalmFirework, Explosion
+from asciimatics.renderers import SpeechBubble, FigletText, Rainbow
+from asciimatics.scene import Scene
+from asciimatics.screen import Screen
+from asciimatics.exceptions import ResizeScreenError
+from random import randint, choice
+
+import colorama
+from termcolor import colored, cprint
+colorama.init()
 
 
 class auto_naparm(ParseMarkpoints, PrairieInterface):
@@ -195,25 +209,53 @@ def query_yes_no(question, default="yes"):
                              "(or 'y' or 'n').\n")
             
             
+
+
+def startup_animation(screen):
+    scenes = []
+    effects = []
+    for _ in range(10):
+        effects.append(
+            Explosion(screen,
+                      randint(3, screen.width - 4),
+                      randint(1, screen.height - 2),
+                      randint(20, 30),
+                      start_frame=randint(0, 250)))
+
+    effects.append(Print(screen,
+                         FigletText("Welcome \nto \nNaparm", font='standard'),
+                         screen.height // 2 - 10,
+                         speed=1,
+                         start_frame=100))
+
+    scenes.append(Scene(effects, -1))
+
+    screen.play(scenes, stop_on_resize=True, repeat=False)
+            
             
         
 if __name__ == '__main__':
-
-    f = Figlet(font='starwars')
-    f2 = Figlet(font='epic')
-    print (f.renderText('Welcome to auto naparm'))
-    print('Paste Naparm path below to begin')
+    
+    clear = lambda: os.system('cls')
+    clear()
+    Screen.wrapper(startup_animation)
+ 
+    print(colored('Paste Naparm path below to begin','white','on_red', attrs=['reverse', 'blink']))
     naparm_path = os.path.normpath(input())
-    print('initialising auto naparm')
-    
-    
-    an = auto_naparm(naparm_path= naparm_path)
-    ready = query_yes_no('*************Your laser power is {} ******************** \nARE YOU READY TO FIRE?!!!!!'.format(an.laser_powers[0]))
-    
-    if ready: 
-        an.fire()
+    if not os.path.exists(naparm_path):
+        print('file directory not found')
+        time.sleep(3)
     else:
-        print(f2.renderText('GOODBYE'))
+        print('initialising auto naparm')
+        
+        
+        an = auto_naparm(naparm_path= naparm_path)
+        ready = query_yes_no('*************Your laser power is {} ******************** \nARE YOU READY TO FIRE?!!!!!'.format(an.laser_powers[0]))
+        
+        if ready: 
+            an.fire()
+        else:
+            print(f2.renderText('GOODBYE'))
     
     
     
