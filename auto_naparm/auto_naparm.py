@@ -4,11 +4,11 @@ import time
 import os
 import sys
 sys.path.append("..")
-sys.path.append("/home/jamesrowland/Documents/Code/blimp/matlab")
+
 from utils.parse_markpoints import ParseMarkpoints
-#from utils.prairie_interface import PrairieInterface
-#from utils import mat_loader as ml
-#from sdk.slm_sdk import SLMsdk
+from utils.prairie_interface import PrairieInterface
+from utils import mat_loader as ml
+from sdk.slm_sdk import SLMsdk
 import scipy.io
 import yaml
 import numpy as np
@@ -42,31 +42,31 @@ class auto_naparm(ParseMarkpoints):
         
         self.naparm_path = naparm_path
         self.naparm_rate = naparm_rate
-        #self.get_yaml()
+        self.get_yaml()
         self.get_paths()       
-        #self.mask_list = self.convert_tiffs(self.tiff_list)
-#        
+        self.mask_list = self.convert_tiffs(self.tiff_list)
+       
         ParseMarkpoints.__init__(self, xml_path=self.xml_path, gpl_path=self.gpl_path)  
-#            
-#        self.galvo_positions()
+           
+        self.galvo_positions()
 
         self.stim_timings()
         
-#        self.markpoints_string()
-#        
-#        sdk = SLMsdk()
-#        sdk.SLM_connect()
-#        mask_pointers = sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
-#        
-#        slm_thread = Thread(target=sdk.load_precalculated_triggered, args = [mask_pointers])
-#        slm_thread.start()
-#        
-#        PrairieInterface.__init__(self)
+        self.markpoints_string()
+
+        sdk = SLMsdk()
+        sdk.SLM_connect()
+        mask_pointers = sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
+
+        slm_thread = Thread(target=sdk.load_precalculated_triggered, args = [mask_pointers])
+        slm_thread.start()
+
+        PrairieInterface.__init__(self)
 
 
-#    def get_yaml(self):
-#        with open(r'C:\Users\User\Documents\Code\blimp\blimp_settings.yaml', 'r') as stream:
-#                    self.yaml_dict = yaml.load(stream)
+    def get_yaml(self):
+       with open(r'C:\Users\User\Documents\Code\blimp\blimp_settings.yaml', 'r') as stream:
+                   self.yaml_dict = yaml.load(stream)
 #               
     def get_paths(self):           
         for file in os.listdir(self.naparm_path):
@@ -85,43 +85,43 @@ class auto_naparm(ParseMarkpoints):
             for file in os.listdir(os.path.join(naparm_path, 'PhaseMasks')):
                 if file.endswith('.tif') or file.endswith('.tiff'):
                     self.tiff_list.append(os.path.join(naparm_path, 'PhaseMasks', file))
-#                    
-#    def convert_tiffs(self, tiff_list):
-#        return [tifffile.imread(tiff) for tiff in tiff_list]
-#        
-#    def galvo_positions(self):
-#    
-#        st = ml.load_mat_struct(self.points_path)
-#        points = st['points']
-#        
-#        all_x_galvo = points.GroupCentroidX
-#        all_y_galvo = points.GroupCentroidY
-#        groupings = points.Group
-#        self.num_groups = max(groupings)
+                   
+    def convert_tiffs(self, tiff_list):
+       return [tifffile.imread(tiff) for tiff in tiff_list]
+       
+    def galvo_positions(self):
 
-#        self.galvo_x = []
-#        self.galvo_y = []
-#        
-#        for group in range(1,self.num_groups+1):
-#    
-#            group_idx = np.where(groupings==group)
-#            
-#            # x and y galvo positions of all points in pixels
-#            x_px = all_x_galvo[group_idx]
-#            y_px = all_y_galvo[group_idx]
-#            
-#            # all elements should be the same (stolen from stack overflow)
-#            assert list(x_px).count(x_px[0]) == len(x_px)
-#            assert list(y_px).count(y_px[0]) == len(y_px)
-#            
-#            #into foxy ratio format
-#            self.galvo_x.append(x_px[0] / 512)
-#            self.galvo_y.append(y_px[0] / 512)
-#            
-#        print(self.laser_powers)
+       st = ml.load_mat_struct(self.points_path)
+       points = st['points']
+       
+       all_x_galvo = points.GroupCentroidX
+       all_y_galvo = points.GroupCentroidY
+       groupings = points.Group
+       self.num_groups = max(groupings)
 
-#        assert len(self.galvo_x) == len(self.galvo_y) == len(self.durations) == len(self.laser_powers)
-#        
+       self.galvo_x = []
+       self.galvo_y = []
+       
+       for group in range(1,self.num_groups+1):
+
+           group_idx = np.where(groupings==group)
+           
+           # x and y galvo positions of all points in pixels
+           x_px = all_x_galvo[group_idx]
+           y_px = all_y_galvo[group_idx]
+           
+           # all elements should be the same (stolen from stack overflow)
+           assert list(x_px).count(x_px[0]) == len(x_px)
+           assert list(y_px).count(y_px[0]) == len(y_px)
+           
+           #into foxy ratio format
+           self.galvo_x.append(x_px[0] / 512)
+           self.galvo_y.append(y_px[0] / 512)
+           
+       print(self.laser_powers)
+
+       assert len(self.galvo_x) == len(self.galvo_y) == len(self.durations) == len(self.laser_powers)
+       
 #    
     def stim_timings(self):
         
@@ -130,54 +130,54 @@ class auto_naparm(ParseMarkpoints):
         
         self.total_time = len(slm_arr) / self.naparm_rate
         
-#        #time between each SLM trigger
-#        self.slm_diff = np.diff(np.where(np.diff(slm_arr) > 0))[0] / self.naparm_rate * 1000 #ms 
+        #time between each SLM trigger
+        self.slm_diff = np.diff(np.where(np.diff(slm_arr) > 0))[0] / self.naparm_rate * 1000 #ms 
 
-#        #the time between each PV trigger
-#        self.pv_diff = np.diff(np.where(np.diff(pv_arr) > 0))[0] / self.naparm_rate * 1000  #ms
-#        
-#        #assumes that there is a trigger at t=0
-#        num_stims = len(np.where(np.diff(pv_arr) > 0)[0]) + 1
-#        self.n_repeats = num_stims / self.num_groups 
-#        assert self.n_repeats.is_integer()
-#        self.n_repeats = int(self.n_repeats)
+        #the time between each PV trigger
+        self.pv_diff = np.diff(np.where(np.diff(pv_arr) > 0))[0] / self.naparm_rate * 1000  #ms
+
+        #assumes that there is a trigger at t=0
+        num_stims = len(np.where(np.diff(pv_arr) > 0)[0]) + 1
+        self.n_repeats = num_stims / self.num_groups 
+        assert self.n_repeats.is_integer()
+        self.n_repeats = int(self.n_repeats)
                 
-#        
-#    def markpoints_string(self):
-#    
-#        mp_strings = []
+       
+    def markpoints_string(self):
 
-#        #currently only supporting evenly spaced groups
-#        inter_group_interval = self.slm_diff[0]
+       mp_strings = []
 
-#        spiral_size = self.yaml_dict['spiral_size'] / (self.yaml_dict['FOVsize_UM_1x'] / self.yaml_dict['zoom'])
-#        spiral_revolutions = self.spiral_revolutions[0]
+       #currently only supporting evenly spaced groups
+       inter_group_interval = self.slm_diff[0]
 
-#        for group in range(self.num_groups):
-#        
-#            x = self.galvo_x[group]
-#            y = self.galvo_y[group]
-#            duration = self.durations[group]
-#            laser_power = self.laser_powers[group]
-#            #laser_power = pm.laser_powers[group]
-#            num_spirals = self.repetitions[group]
-#            
-#            mp_string = self.build_strings(X=x,Y=y,duration=duration,laser_power=laser_power, \
-#                                         is_spiral=True, spiral_size=spiral_size, \
-#                                         spiral_revolutions=spiral_revolutions, num_spirals=num_spirals)
+       spiral_size = self.yaml_dict['spiral_size'] / (self.yaml_dict['FOVsize_UM_1x'] / self.yaml_dict['zoom'])
+       spiral_revolutions = self.spiral_revolutions[0]
 
-#            mp_strings.append(mp_string)
-#            
+       for group in range(self.num_groups):
+       
+           x = self.galvo_x[group]
+           y = self.galvo_y[group]
+           duration = self.durations[group]
+           laser_power = self.laser_powers[group]
+           #laser_power = pm.laser_powers[group]
+           num_spirals = self.repetitions[group]
+           
+           mp_string = self.build_strings(X=x,Y=y,duration=duration,laser_power=laser_power, \
+                                        is_spiral=True, spiral_size=spiral_size, \
+                                        spiral_revolutions=spiral_revolutions, num_spirals=num_spirals)
 
-#            
-#            
-#        self.all_groups_string = self.groups_strings(inter_group_interval=inter_group_interval, \
-#                                              group_list=mp_strings, SLM_trigger=True, n_repeats=self.n_repeats)
-#                                              
-#    
-#    def fire(self):
-#        
-#        self.pl.SendScriptCommands(self.all_groups_string)
+           mp_strings.append(mp_string)
+           
+
+           
+           
+       self.all_groups_string = self.groups_strings(inter_group_interval=inter_group_interval, \
+                                             group_list=mp_strings, SLM_trigger=True, n_repeats=self.n_repeats)
+                                             
+   
+    def fire(self):
+       
+       self.pl.SendScriptCommands(self.all_groups_string)
 
 
 
@@ -268,8 +268,8 @@ if __name__ == '__main__':
         eng = matlab.engine.start_matlab()
   
 
-    print(colored('*************Your laser power is {} PV********************', 'red'))
-    ready = query_yes_no('ARE YOU READY TO FIRE?!!!!!'.format(5))#an.laser_powers[0]))
+    print(colored('*************Your laser power is {} PV********************'.format(an.laser_powers[0]), 'red'))
+    ready = query_yes_no('ARE YOU READY TO FIRE?!!!!!')
     
     if ready: 
     

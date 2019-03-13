@@ -1,1 +1,0 @@
-python auto_naparm.py
