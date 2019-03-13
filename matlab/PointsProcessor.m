@@ -25,13 +25,15 @@ parse(p, varargin{:});
 
 %load the naparam points structure given in points_path
 
-s = load(p.Results.PointsPath);
-Points = s.points;
+naparm = load(p.Results.PointsPath);
+naparm_points = naparm.points;
 % remove group information from the starting Points object. Groups will be
 % generated later and saving these + the initial groups from naparm is
 % confusing
 %Points = rmfield(Points, {'Group', 'GroupCentroidX', 'GroupCentroidY'});
 
+Points.X = naparm_points.X;
+Points.Y = naparm_points.Y;
 %add plane information to structures from naparm2
 if ~isfield(Points, 'Z')
     Points.Z = ones(1, length(Points.X));
@@ -42,8 +44,6 @@ end
 obj = {};
 obj.all_points = Points;
 obj.inputParameters = p.Results;
-
-
 
 
 if obj.inputParameters.processAll

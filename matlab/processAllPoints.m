@@ -2,12 +2,14 @@ function obj = processAllPoints(obj)
 
 obj.all_points = ParseForMaskMaker(obj.all_points, obj.inputParameters);
 %obj.all_points = ParseForMarkpoints(obj.all_points, obj.inputParameters);
+
+
 numGroups = obj.all_points.numGroups;
 SaveNames = cell(numGroups,1);
 for i = 1:numGroups
     SaveNames{i} = ['allGroups_mask_' num2str(i) '_.tiff' ];
 end
-keyboard
+
 
 
 % [PhaseMasks, TransformedSLMTargets] = SLMPhaseMaskMakerCUDA3D_v2(... 
