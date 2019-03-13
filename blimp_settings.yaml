@@ -1,14 +1,41 @@
-FOVsize_UM_1x: 1000
-duration: 300
-experiment: AllCells
-group_size: 6
-inter_group_interval: 30
-mWperCell: 6
-naparm_path: F:\Data\jrowland\2019-02-21\naparm\2019-02-21_blimpTest_001
-num_spirals: 1
-num_subsets: 1
-output_path: F:\Data\jrowland\2019-03-08\blimp
-percents: [90, 50]
-spiral_revolutions: 5
-spiral_size: 15
+#### photostimulation settings ####
+
+# path to the naparm folder containing points for experiments
+naparm_path: F:\Data\jrowland\2019-03-13\naparm\2019-03-13_plasticSlide_NAPARM_001
+
+# zoom you are imaging at, used only for spiral size
 zoom: 2
+# duration of each spiral (ms)
+duration: 25
+#number of times to repeat spirals on each cell
+num_spirals: 10
+# number of cells per group
+group_size: 7
+# power on sample / cell (18 mW is good for a burn)
+mWperCell: 18
+#time between groups (ms) -- should be at least 5
+inter_group_interval: 30
+#size of spiral (um) 
+spiral_size: 15
+#number of revolutions each spiral will turn
+spiral_revolutions: 5
+
+########################################################
+
+#### behaviour settings ####
+
+#blimp experiment to run
+experiment: AllCells
+#the number of subset iterations for a percent cells experiment
+num_subsets: 1
+#list of the percents of cells to stim in a percent cells experiment
+percents: [90, 50]
+
+########################################################
+
+#### basic settings, rarely changed ####
+
+# should be same as naparm setting
+FOVsize_UM_1x: 1118.5
+#path to save blimp outputs, updated automatically in startup_gui.py
+output_path: F:\Data\rlees\2019-03-12\blimp
