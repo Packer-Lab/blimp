@@ -27,10 +27,6 @@ parse(p, varargin{:});
 
 naparm = load(p.Results.PointsPath);
 naparm_points = naparm.points;
-% remove group information from the starting Points object. Groups will be
-% generated later and saving these + the initial groups from naparm is
-% confusing
-%Points = rmfield(Points, {'Group', 'GroupCentroidX', 'GroupCentroidY'});
 
 Points.X = naparm_points.X;
 Points.Y = naparm_points.Y;
@@ -65,7 +61,7 @@ end
 
 %save placeholder, remove
 if ~isempty(obj.inputParameters.SavePath)
-    save(obj.inputParameters.SavePath, 'obj');
+    save([obj.inputParameters.SavePath filesep 'matlab_input_parameters.mat'], 'obj');
 end
 
 

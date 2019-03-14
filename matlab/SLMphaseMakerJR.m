@@ -133,7 +133,7 @@ for idx = 1:NumGroups
     
     if save_files
         
-        transformed_dir = [saveDirectory '\PhaseMasks\TransformedTargets\'];
+        transformed_dir = [saveDirectory filesep 'PhaseMasks' filesep 'TransformedTargets' filesep];
         
         if  ~exist(transformed_dir, 'dir')
             mkdir(transformed_dir)
@@ -173,7 +173,6 @@ for idx = 1:NumGroups
         % fudge weights steepness (slope of fit)
         W.p_edited = W.p;
         W.p_edited(1) = W.p_edited(1) * SteepnessFudgeFactor;
-        disp(W.p_edited);
         
         % estimate intensites of spots based on calibration data
         estimatedIntensity = polyval(W.p_edited, distances);
@@ -198,7 +197,7 @@ for idx = 1:NumGroups
 
     
     if save_files
-        weighted_dir = [saveDirectory '\PhaseMasks\TransformedTargets\'];
+        weighted_dir = [saveDirectory filesep 'PhaseMasks' filesep 'TransformedTargets' filesep];
         if  ~exist(weighted_dir, 'dir')
             mkdir(weighted_dir)
         end
@@ -244,7 +243,7 @@ for idx = 1:NumGroups
     PhaseMasks{idx} = phaseMask8;
     % Save
     if save_files
-        phase_dir = [saveDirectory '\PhaseMasks\'];
+        phase_dir = [saveDirectory filesep 'PhaseMasks' filesep];
         if ~exist(phase_dir, 'dir')
             mkdir(phase_dir);
         end

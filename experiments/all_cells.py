@@ -68,6 +68,8 @@ class AllCells():
         
         self.mp_output = self.Blimp.pl.SendScriptCommands(self.all_groups_mp)
         
+        self.Blimp.write_output(self.Blimp.trial_runtime, self.Blimp.trial_number, self.Blimp.barcode, 'all_cells_stimulated')
+        
         
         
 

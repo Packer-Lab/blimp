@@ -27,3 +27,17 @@ end
 obj.all_points.PhaseMasks = PhaseMasks;
 obj.all_points.TransformedSLMTargets = TransformedSLMTargets;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
