@@ -82,9 +82,9 @@ class auto_naparm(ParseMarkpoints):
                 self.to_slm = os.path.join(self.naparm_path, file)  
                         
             self.tiff_list = []
-            for file in os.listdir(os.path.join(naparm_path, 'PhaseMasks')):
+            for file in os.listdir(os.path.join(self.naparm_path, 'PhaseMasks')):
                 if file.endswith('.tif') or file.endswith('.tiff'):
-                    self.tiff_list.append(os.path.join(naparm_path, 'PhaseMasks', file))
+                    self.tiff_list.append(os.path.join(self.naparm_path, 'PhaseMasks', file))
                    
     def convert_tiffs(self, tiff_list):
        return [tifffile.imread(tiff) for tiff in tiff_list]
@@ -148,7 +148,7 @@ class auto_naparm(ParseMarkpoints):
        mp_strings = []
 
        #currently only supporting evenly spaced groups
-       inter_group_interval = self.slm_diff[0]
+       self.inter_group_interval = self.slm_diff[0]
 
        spiral_size = self.yaml_dict['spiral_size'] / (self.yaml_dict['FOVsize_UM_1x'] / self.yaml_dict['zoom'])
        spiral_revolutions = self.spiral_revolutions[0]
@@ -171,7 +171,7 @@ class auto_naparm(ParseMarkpoints):
 
            
            
-       self.all_groups_string = self.groups_strings(inter_group_interval=inter_group_interval, \
+       self.all_groups_string = self.groups_strings(inter_group_interval=self.inter_group_interval, \
                                              group_list=mp_strings, SLM_trigger=True, n_repeats=self.n_repeats)
                                              
    

@@ -330,9 +330,7 @@ def ITI(event):
        
         print('LED current is %s'%v.LED_currents[v.LED_steps])
 
-        
-            
-        
+
             
         if v.autoreward:
             print('correct licks during autoreward phase: %s '%v.num_earned_rewards)
