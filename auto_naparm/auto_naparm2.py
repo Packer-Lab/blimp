@@ -33,44 +33,50 @@ import colorama
 from termcolor import colored, cprint
 colorama.init()
 
+from lxml import objectify
+from lxml import etree
+import numpy as np
+import copy
 
-#class auto_naparm(ParseMarkpoints, PrairieInterface):
-class auto_naparm(ParseMarkpoints):
-    
+class AutoNaparm2(ParseMarkpoints, PrairieInterface):
+
     def __init__(self, naparm_path, naparm_rate=1000):
-        
-        
+    
         self.naparm_path = naparm_path
         self.naparm_rate = naparm_rate
-        self.get_yaml()
-        self.get_paths()       
-        self.mask_list = self.convert_tiffs(self.tiff_list)
-       
-        ParseMarkpoints.__init__(self, xml_path=self.xml_path, gpl_path=self.gpl_path)  
-           
-        self.galvo_positions()
-
-        self.stim_timings()
         
-        self.markpoints_string()
-
-        sdk = SLMsdk()
-        sdk.SLM_connect()
-        mask_pointers = sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
-
-        slm_thread = Thread(target=sdk.load_precalculated_triggered, args = [mask_pointers])
-        slm_thread.start()
-
+        self.get_paths()  
+        
+        ParseMarkpoints.__init__(self, xml_path=self.xml_path, gpl_path=self.gpl_path)  
         PrairieInterface.__init__(self)
+        
+        self.mask_list = self.convert_tiffs(self.tiff_list)
+        self.num_groups = len(self.mask_list)
+        self.stim_timings()
+        try:
+            sdk = SLMsdk()
+            sdk.SLM_connect()
+            
+            mask_pointers = sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
+            
+            slm_thread = Thread(target=sdk.load_precalculated_triggered, args = [mask_pointers])
+            slm_thread.start()
+        except:
+            print(colored('I COULD NOT CONNECT TO THE SLM CLOSE BLINK / OTHER AUTONAPARMS I WILL TRY AGAIN IN 5 SECONDS','yellow','on_red', attrs=['reverse', 'blink']))
+            time.sleep(5)
+            AutoNaparm2(self.naparm_path)
+            
+            
+            
+            
 
-
-    def get_yaml(self):
-       with open(r'C:\Users\User\Documents\Code\blimp\blimp_settings.yaml', 'r') as stream:
-                   self.yaml_dict = yaml.load(stream)
-#               
+        
+        self.new_xml()
+        
+        
     def get_paths(self):           
         for file in os.listdir(self.naparm_path):
-            if file.endswith('.xml'):
+            if file.endswith('.xml') and 'AutoNaparm' not in file:
                 self.xml_path= os.path.join(self.naparm_path, file)
             elif file.endswith('gpl'):
                 self.gpl_path = os.path.join(self.naparm_path, file)
@@ -85,44 +91,12 @@ class auto_naparm(ParseMarkpoints):
             for file in os.listdir(os.path.join(self.naparm_path, 'PhaseMasks')):
                 if file.endswith('.tif') or file.endswith('.tiff'):
                     self.tiff_list.append(os.path.join(self.naparm_path, 'PhaseMasks', file))
-                   
+                    
+                    
     def convert_tiffs(self, tiff_list):
-       return [tifffile.imread(tiff) for tiff in tiff_list]
-       
-    def galvo_positions(self):
-
-       st = ml.load_mat_struct(self.points_path)
-       points = st['points']
-       
-       all_x_galvo = points.GroupCentroidX
-       all_y_galvo = points.GroupCentroidY
-       groupings = points.Group
-       self.num_groups = max(groupings)
-
-       self.galvo_x = []
-       self.galvo_y = []
-       
-       for group in range(1,self.num_groups+1):
-
-           group_idx = np.where(groupings==group)
-           
-           # x and y galvo positions of all points in pixels
-           x_px = all_x_galvo[group_idx]
-           y_px = all_y_galvo[group_idx]
-           
-           # all elements should be the same (stolen from stack overflow)
-           assert list(x_px).count(x_px[0]) == len(x_px)
-           assert list(y_px).count(y_px[0]) == len(y_px)
-           
-           #into foxy ratio format
-           self.galvo_x.append(x_px[0] / 512)
-           self.galvo_y.append(y_px[0] / 512)
-           
-       print(self.laser_powers)
-
-       assert len(self.galvo_x) == len(self.galvo_y) == len(self.durations) == len(self.laser_powers)
-       
-#    
+        return [tifffile.imread(tiff) for tiff in tiff_list]
+        
+        
     def stim_timings(self):
         
         pv_arr = np.fromfile(self.to_pv, dtype=float)
@@ -141,46 +115,68 @@ class auto_naparm(ParseMarkpoints):
         self.n_repeats = num_stims / self.num_groups 
         assert self.n_repeats.is_integer()
         self.n_repeats = int(self.n_repeats)
+        
+    def new_xml(self):
+        
+        tree = etree.parse(self.xml_path)
+        root = tree.getroot()
+        
+        markpoint_elems = root.findall('PVMarkPointElement')
+        
+        stim_length = int(self.durations[0]) * int(self.repetitions[0])
+        inter_group_interval = self.slm_diff[0]
+        for i,point in enumerate(markpoint_elems):
+    
+            #dont change the dummy
+            if point.attrib['UncagingLaserPower'] == '0': 
+                mute_point = False
+            else:
+                mute_point = True
+
+            if mute_point:       
+                point.attrib['TriggerFrequency'] = 'Never'
+                galvo_elem_point = next(node for node in point.getiterator() if node.tag == 'PVGalvoPointElement')
+                galvo_elem_point.attrib['InitialDelay'] = str(inter_group_interval - stim_length)
+            
+            
+            slm_trigger = copy.deepcopy(point)
+            
+            slm_trigger.attrib['UncagingLaser'] = 'Trigger'
+            slm_trigger.attrib['UncagingLaserPower'] = '5' #this is 1000 PV in weird xml speak
+            slm_trigger.attrib['AsyncSyncFrequency'] = 'None'
+            slm_trigger.attrib['Repetitions'] = '1'
+
+            galvo_elem_slm = next(node for node in slm_trigger.getiterator() if node.tag == 'PVGalvoPointElement')
+
+            galvo_elem_slm.attrib['InitialDelay'] = '0'
+            galvo_elem_slm.attrib['Duration'] = '1'
+            galvo_elem_slm.attrib['SpiralRevolutions'] = '1'
+
+            
+            if i != len(markpoint_elems) - 1:
+                parent = point.getparent()
+                parent.insert(parent.index(point)+1, slm_trigger)
                 
-       
-    def markpoints_string(self):
-
-       mp_strings = []
-
-       #currently only supporting evenly spaced groups
-       self.inter_group_interval = self.slm_diff[0]
-
-       spiral_size = self.yaml_dict['spiral_size'] / (self.yaml_dict['FOVsize_UM_1x'] / self.yaml_dict['zoom'])
-       spiral_revolutions = self.spiral_revolutions[0]
-
-       for group in range(self.num_groups):
-       
-           x = self.galvo_x[group]
-           y = self.galvo_y[group]
-           duration = self.durations[group]
-           laser_power = self.laser_powers[group]
-           #laser_power = pm.laser_powers[group]
-           num_spirals = self.repetitions[group]
-           
-           mp_string = self.build_strings(X=x,Y=y,duration=duration,laser_power=laser_power, \
-                                        is_spiral=True, spiral_size=spiral_size, \
-                                        spiral_revolutions=spiral_revolutions, num_spirals=num_spirals)
-
-           mp_strings.append(mp_string)
-           
-
-           
-           
-       self.all_groups_string = self.groups_strings(inter_group_interval=self.inter_group_interval, \
-                                             group_list=mp_strings, SLM_trigger=True, n_repeats=self.n_repeats)
-                                             
-   
+        self.autoxml_path = self.xml_path[:-4] + '_AutoNaparmXML.xml'        
+        
+        
+        tree.write(self.autoxml_path)
+        
+        self.pl.SendScriptCommands('-LoadMarkPoints {}'.format(self.autoxml_path))
+        self.pl.SendScriptCommands('-LoadMarkPoints {} True'.format(self.gpl_path))
+        
+        
+        
     def fire(self):
-       
-       self.pl.SendScriptCommands(self.all_groups_string)
+        self.pl.SendScriptCommands('-MarkPoints')
+        
 
+        
+        
 
+ 
 
+        
 def startup_animation(screen):
     scenes = []
     effects = []
@@ -238,7 +234,7 @@ def query_yes_no(question, default="yes"):
             
         
 if __name__ == '__main__':
-    
+
     clear = lambda: os.system('cls')
     clear()
     
@@ -258,7 +254,7 @@ if __name__ == '__main__':
             path_found = True
             
     #initialise auto naparm
-    an = auto_naparm(naparm_path= naparm_path)
+    an = AutoNaparm2(naparm_path= naparm_path)
     
     t_series = query_yes_no('Do you want to image during this Naparm?')
     
@@ -279,20 +275,20 @@ if __name__ == '__main__':
         
         an.fire()
     else:
-        print(f2.renderText('GOODBYE'))
+        print(colored('GOODBYE', 'red'))
+        time.sleep(2)
+        sys.exit()
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+        
+        
+        
+        
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
 
