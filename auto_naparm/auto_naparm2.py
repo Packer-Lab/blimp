@@ -88,9 +88,13 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
                 self.to_slm = os.path.join(self.naparm_path, file)  
                         
             self.tiff_list = []
-            for file in os.listdir(os.path.join(self.naparm_path, 'PhaseMasks')):
-                if file.endswith('.tif') or file.endswith('.tiff'):
-                    self.tiff_list.append(os.path.join(self.naparm_path, 'PhaseMasks', file))
+            try:
+                for file in os.listdir(os.path.join(self.naparm_path, 'PhaseMasks')):
+                    if file.endswith('.tif') or file.endswith('.tiff'):
+                        self.tiff_list.append(os.path.join(self.naparm_path, 'PhaseMasks', file))
+            except:
+                print(colored('WOHHH ARE YOU SURE THATS A NAPARM FOLDER!? PRESS CTR-C AND START AGAIN','yellow','on_red', attrs=['reverse', 'blink']))
+                time.sleep(1000)
                     
                     
     def convert_tiffs(self, tiff_list):
@@ -256,11 +260,15 @@ if __name__ == '__main__':
     #initialise auto naparm
     an = AutoNaparm2(naparm_path= naparm_path)
     
-    t_series = query_yes_no('Do you want to image during this Naparm?')
+    t_series = query_yes_no('Do you want to image during this Naparm? SORRY THIS IS CURRENTLY NOT IMPLEMENTED DO IT MANUALLY')
+    #take me out at some point
+    t_series = False
+    print(colored('This Naparm will take {} seconds, if you want to image please update PV t-series settings'.format(an.total_time), 'white'))
+    print(colored('DONT FORGET TO RECORD A PAQ!!!'.format(an.total_time), 'white'))
     
     if t_series:
         print(colored('OK, initialising matlab engine for read raw data stream', 'yellow'))
-        print(colored('This Naparm will take {} seconds, please update PV t-series settings'.format(an.total_time), 'white'))
+        
         eng = matlab.engine.start_matlab()
   
 
@@ -269,9 +277,9 @@ if __name__ == '__main__':
     
     if ready: 
     
-        if t_series:
-            print(colored('Initialising Read Raw Data Stream', 'yellow'))
-            eng.PrairieLink_RawDataStream(nargout=0)
+        # if t_series:
+            # print(colored('Initialising Read Raw Data Stream', 'yellow'))
+            # eng.PrairieLink_RawDataStream(nargout=0)
         
         an.fire()
     else:
