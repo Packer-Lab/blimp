@@ -1,4 +1,4 @@
-function obj = PointsProcessor(naparm_path, varargin)
+function obj = Main(naparm_path, varargin)
 %takes an input of a naparm Points object and returns a points object that can be parsed to
 %phase mask and gpl makers
 % JR 2019. Meat by LR 2018
@@ -45,7 +45,7 @@ obj.inputParameters = p.Results;
 if obj.inputParameters.processAll
     
     %build phase masks from all the points
-    obj = processAllPoints(obj);
+    obj = AllPoints(obj);
     
 end
 

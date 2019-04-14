@@ -192,7 +192,8 @@ class SLMsdk():
             assert okay, 'Failed to write frames to board'
          
             #the first frame should be already loaded
-            #if i == 0: continue
+            # NEED TO COMMENT THIS OUT TO USE AUTO_NAPARM IN CURRENT STATE!!!!
+            if i == 0: continue
                 
             #trigger remaining frames           
             okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))

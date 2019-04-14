@@ -1,12 +1,16 @@
 from pyControl.utility import *
 import hardware_definition as hw
 from devices import *
+import pyb
+board = Breakout_1_2()
 
-states = ['trial_start', 'SLM_state', 'LED_state', 'detect_lick_go', 'detect_lick_nogo']
+states = ['lick_withold', 'trial_start', 'SLM_state', 'LED_state', 'detect_lick_go', 'detect_lick_nogo', 'ITI', 'auto_reward', 'earned_reward']
         
-events = ['SLM_trial', 'LED_trial', 'lick_window']
+events = ['SLM_trial', 'LED_trial', 'lick_window', 'lick_1', 'solenoidOff', 'autoreward', 'rsync']
 
-initial_state = 'trial_start'
+initial_state = 'lick_withold'
+
+
 
 ##### set the parameters of the task here
 ## --------------------------------------------------------------------------------------
@@ -18,14 +22,14 @@ v.d_prime_threshold = 2
 v.lick_window = 2.5  # reward time window during which mouse has to lick (s)
 
 # inter-trial-interval parameters
-v.withold_len = [x / 10 for x in range(40, 61)] #time that the animal must withold licking, a list in 0.1 increments from 4-6, that can be sampled randomly
+v.withold_len = [x / 100 for x in range(40, 61)] #time that the animal must withold licking, a list in 0.1 increments from 4-6, that can be sampled randomly
 v.ITI = 5 # the inter-trial interval(S). This is also the time during which rewards are registered as recieved if the animal licks
 
 # parameters for switching between autorewarded and not autorewarded conditions
 v.miss_switch = 3 # the number of consecutive missed trials before the animal is switched back to autoreward
 
 # the number of consecutive trials where the animal did not drink a reward before ending the framework
-v.end_ignore = 10
+v.end_ignore = 30
 
 v.rolling_window_len = 10 #the length of the rolling d' window
 
@@ -64,8 +68,10 @@ v.gave_reward = False #tell the ITI function whether a reward has just been deli
 v.drank_reward = False #whether the animal drank its reward
 
 #autoreward settings
+v.autoreward = False #this is currently not used
 v.boost_autoreward = False # whether to give a boost autoreward after a few consecutive misses
 v.num_boosts = 0 #the number of boost phases
+
 
 v.hit_rate = 'NaN'
 v.false_alarm_rate = 'NaN'
@@ -81,7 +87,7 @@ def run_start():
 
 def run_end():  
     hw.solenoid.off()
-    hw.LED.off()# Turn off hardware outputs.
+    print('mouse has recieved {} rewards total'.format(v.num_rewards_received))
  
 
 def threeway_probtree(P, recurs=False):
@@ -130,11 +136,15 @@ def trial_start(event):
         
         v.isSLM, v.isLED, v.isNoGo  = threeway_probtree(0.3, recurs=True)
         
-        if   v.isSLM:    timed_goto_state('SLM_state', 1*second)      
-        elif v.isLED:    timed_goto_state('LED_state', 1*second)
-        elif v.isNoGo:   timed_goto_state('detect_lick_nogo', 1*second)
+        if   v.isSLM:   print('Start SLM trial'),  timed_goto_state('SLM_state', 100*ms)      
+        elif v.isLED:   print('Start LED trial'),  timed_goto_state('LED_state', 100*ms)
+        elif v.isNoGo:  print('Start NOGO trial'), timed_goto_state('detect_lick_nogo', 100*ms)
         else: raise ValueError
 
+def LED_state(event):
+    if event == 'entry':
+        print('LED STATE NOT YET IMPLEMENTED')
+        timed_goto_state('trial_start', 100*ms)
        
 
 def SLM_state(event):    
@@ -143,8 +153,8 @@ def SLM_state(event):
            
         #call the blimp all optical stim function
         publish_event('SLM_trial')
-        trial_barcode = (gauss_rand(1000,100))
-        print('SLM trial Number {0} Barcode {1}'.format(v.num_SLM, trial_barcode))
+        trial_barcode = (gauss_rand(1000,1000))
+        print('Trigger SLM trial Number {0} Barcode {1}'.format(v.num_SLM, trial_barcode))
             
         timed_goto_state('detect_lick_go', 10*ms)
         
@@ -160,6 +170,7 @@ def detect_lick_go(event):
         timed_goto_state('earned_reward', 5*ms)
         disarm_timer('lick_window')
         v.boost_autoreward = False
+        print('correct trial')
  
     if event == 'lick_window':       
         #the mouse has failed to lick in the window 
@@ -189,6 +200,7 @@ def detect_lick_nogo(event):
         print('correct rejection') 
         goto_state('ITI')
         
+        
 
 def earned_reward(event):
 
@@ -216,14 +228,21 @@ def earned_reward(event):
 def auto_reward(event):
 
     if event == 'entry':
-        print('deliver autoreward')
-       
+        hw.solenoid.on()
+        set_timer('solenoidOff', v.reward_time*ms)
+        
+        v.consec_autocorrect = 0
+  
         v.num_rewards += 1
         v.gave_reward = True
-        
-        hw.solenoid.on()
+        print('deliver autoreward')
         print('waterON')
-        set_timer('solenoidOff', v.reward_time*ms)
+
+
+    if event == 'solenoidOff':
+        goto_state('ITI') 
+        hw.solenoid.off()
+
         
 
 def ITI(event):
@@ -235,45 +254,51 @@ def ITI(event):
         if len(v.rolling_fa) > v.rolling_window_len:
             del v.rolling_fa[0]
             
-    #this is necessary for a learned mouse with 0 fas.
-    if sum(v.rolling_fa) == 0 and len(v.rolling_fa) > 2:
-        v.rolling_fa.append(0.0001)
-        
-    try:
-        v.hit_rate = sum(v.rolling_hit) / len(v.rolling_hit)
-        v.false_alarm_rate = sum(v.rolling_fa) / len(v.rolling_fa)
-        v.d_prime = d_prime(v.hit_rate, v.false_alarm_rate)
-    except:
-        print('division by zero error')
-        
-        
-    #print useful general information about task state
-    print('the mouse has done %s trials total'%v.num_trials)
-    print('d_prime is %s'%v.d_prime) 
-    print('hit_rate is %s'%v.hit_rate)
-    print('fa_rate is %s'%v.false_alarm_rate)
-    print('the mouse has missed %s consecutive trials' %v.consecMiss)
-    print('the mouse has ignored %s consecutive rewards'%v.consecIgnored)
-    print('total number rewards is %s'%v.num_rewards)
+        #this is necessary for a learned mouse with 0 fas.
+        if sum(v.rolling_fa) == 0 and len(v.rolling_fa) > 2:
+            v.rolling_fa.append(0.0001)
+            
+        try:
+            v.hit_rate = sum(v.rolling_hit) / len(v.rolling_hit)
+            v.false_alarm_rate = sum(v.rolling_fa) / len(v.rolling_fa)
+            v.d_prime = d_prime(v.hit_rate, v.false_alarm_rate)
+        except:
+            print('division by zero error')
+            
+            
+        #print useful general information about task state
+        print('the mouse has done %s trials total'%v.num_trials)
+        print('d_prime is %s'%v.d_prime) 
+        print('hit_rate is %s'%v.hit_rate)
+        print('fa_rate is %s'%v.false_alarm_rate)
+        print('the mouse has missed %s consecutive trials' %v.consecMiss)
+        print('the mouse has ignored %s consecutive rewards'%v.consecIgnored)
+        print('total number rewards is %s'%v.num_rewards)
 
-    # criteria to switch to boostautoreward
-    if v.consecMiss == v.miss_switch and not v.autoreward:
-        v.boost_autoreward = True
-        v.num_boosts += 1
-        v.consecMiss = 0
-        print('giving a boost autoreward on the next go trial')
-        
-    if v.consecIgnored > v.end_ignore or v.num_boosts == 20:
-        print('ending task due to boredom or fault')
-        stop_framework()
-        
-      
+        # criteria to switch to boostautoreward
+        if v.consecMiss == v.miss_switch and not v.autoreward:
+            v.boost_autoreward = True
+            v.num_boosts += 1
+            v.consecMiss = 0
+            print('giving a boost autoreward on the next go trial')
+            
+        if v.consecIgnored > v.end_ignore or v.num_boosts == 200:
+            print('ending task due to boredom or fault')
+            stop_framework()
+            
+        timed_goto_state('lick_withold', v.ITI*second)  
       
     # increment the reward recieved counter once if mouse licks the reward
     # this will not be registered if the animal licks only in the reward states
     # but normally it takes a few seconds to drink
-
-    if event == 'lick_1' and v.isGo and v.reward_increment and v.gave_reward:
+    
+    #shitty hack 
+    if v.isSLM or v.isLED: 
+        isGo = True
+    else:
+        isGo = False
+    
+    if event == 'lick_1' and isGo and v.reward_increment and v.gave_reward:
         print('reward received')
         v.num_rewards_received += 1
         v.reward_increment = False

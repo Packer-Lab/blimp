@@ -1,6 +1,6 @@
-function [PhaseMasks, TransformedSLMTargets] = SLMphaseMakerJR(varargin)
+function [PhaseMasks, TransformedSLMTargets] = SLMphaseMakerBlimp(varargin)
 
-% JR fudge of SLMPhaseMaskMaker
+% Blimp specific SLMPhaseMaskMaker dont use this for naparm
 % function can be passed the path to a tif file or a Points list from
 % Naparm
 
@@ -70,23 +70,8 @@ if exist('tif_file', 'var')
     
 end
 
-FOVsize_OpticalZoom = yaml.FOVsize_OpticalZoom;
-
-% RL 2018-11-15 for scaling targets according to optical zoom
-for i = 1:length(Points)
-    for j = 1:size(Points{i},1)
-        for k = 1:2
-            a = Points{i}(j,k); %SLM target position
-            b = abs(255-a); %Distance between SLM target and galvo
-            c = (b*2)/FOVsize_OpticalZoom; %scale the distance from a 2x zoom transform
-            if Points{i}(j,k) < 255
-                Points{i}(j,k) = 255-c;
-            else
-                Points{i}(j,k) = 255+c;
-            end
-        end
-    end
-end
+% foxy takes care of this 
+FOVsize_OpticalZoom = 1;
 
 TransformedSLMTargets = {};
 PhaseMasks = {};

@@ -8,6 +8,7 @@ from pyControl.hardware import *
 board = Breakout_1_2()
 
 # Instantiate digital output connected to BNC_1.
-LED = Analog_LED(port=board.port_4)
 Lickometer = Lickometer(port=board.port_1)
-solenoid = Lickometer.SOL_2
+solenoid = Lickometer.SOL_1
+sync_output = Rsync(pin=board.BNC_1, mean_IPI=1000, pulse_dur=10) # Instantiate Rsync object on breakout board BNC_1
+

@@ -1,17 +1,18 @@
 #### photostimulation settings ####
 
 # path to the naparm folder containing points for experiments
-naparm_path: F:\Data\jrowland\2019-03-13\naparm\2019-03-13_plasticSlide_NAPARM_001
+naparm_path: F:\Data\jrowland\2019-04-13\naparm\2019-04-13_plasticSlide_NAPARM_001
 
 # zoom you are imaging at, used only for spiral size
 zoom: 2
 # duration of each spiral (ms)
-duration: 25
+duration: 100
 #number of times to repeat spirals on each cell
 num_spirals: 10
 # number of cells per group
 group_size: 7
 # power on sample / cell (18 mW is good for a burn)
+# this is processed using the mw2pv matlab function which should be in the path 
 mWperCell: 18
 #time between groups (ms) -- should be at least 5
 inter_group_interval: 30
@@ -38,4 +39,4 @@ percents: [90, 50]
 # should be same as naparm setting
 FOVsize_UM_1x: 1118.5
 #path to save blimp outputs, updated automatically in startup_gui.py
-output_path: F:\Data\rlees\2019-03-12\blimp
+output_path: F:\Data\jrowland\2019-04-13\blimp

@@ -1,5 +1,5 @@
 import numpy as np
-import yaml
+import ruamel.yaml
 from sdk.slm_sdk import SLMsdk
 from utils.prairie_interface import PrairieInterface
 from utils.parse_markpoints import ParseMarkpoints
@@ -17,20 +17,26 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         #load yaml
         base_path = os.path.dirname(__file__)
         yaml_path = os.path.join(base_path, "blimp_settings.yaml")
-
+    
+        #the ruamel module preserves the comments and order of the yaml file
+        yaml = ruamel.yaml.YAML() 
         with open(yaml_path, 'r') as stream:
             yaml_dict = yaml.load(stream)
-        
-        
+            
+
         self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
         
         self.naparm_path = yaml_dict['naparm_path']
         output_path = yaml_dict['output_path'] 
         
         self.output_folder = os.path.join(output_path, self.time_now)
-        
+
         if not os.path.exists(self.output_folder):
             os.makedirs(self.output_folder)
+            
+        # save the current settings yaml into the todays folder
+        with open(os.path.join(self.output_folder, '{}_blimp_settings.yaml'.format(self.time_now)), 'w+') as f:
+            yaml.dump(yaml_dict, f)
             
         self.group_size = yaml_dict['group_size']
         
@@ -48,7 +54,12 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         PrairieInterface.__init__(self)
         ParseMarkpoints.__init__(self)
         # connect to the SLM
-        self.SLM_connect() 
+        try:
+            self.SLM_connect() 
+        except:
+            print('close other SLM connections')
+            time.sleep(5)
+            raise
         
         #start the matlab engine
         print('Initialising matlab engine')
@@ -56,7 +67,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         print('matlab engine initialised')
 
         # get the points object for all target points
-        points_obj = self.eng.PointsProcessor(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
+        points_obj = self.eng.Main(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
         self.all_points = points_obj['all_points']
         
         # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
@@ -77,7 +88,11 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
 
         # inits the experiment class with Blimp attributes (this is probably a horrible way of doing this)
         self.experiment = self.experiment_class(self)
-
+        
+        #set the uncaging laser power to 0 and open the uncaging shutter
+        self.pl.SendScriptCommands('-SetLaserPower Uncaging 0')
+        time.sleep(1)
+        self.pl.SendScriptCommands('-OverrideHardShutter Uncaging open')
         
     def update(self, new_data, run_time):
         
@@ -92,16 +107,14 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             self.__init__()
         
         self.run_time_prev = run_time        
-      
         # break function if no new print statement is found
         if pycontrol_print:
             pycontrol_print = pycontrol_print[0][2]
         else:
             return
-
+        
         # an SLM trial is initiated
-        if 'SLM trial' in pycontrol_print:
-            
+        if 'Trigger SLM trial' in pycontrol_print:
             
             self.trial_runtime = round(run_time,4) # dont need more than ms precision
             # search the SLM trial string for the number and barcode
