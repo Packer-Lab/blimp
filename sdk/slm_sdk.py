@@ -17,6 +17,7 @@ class SLMsdk():
         abspath = os.path.abspath(__file__)
         dname = os.path.dirname(abspath)
         os.chdir(dname)
+        print("hello")
         
         #load dlls
         cdll.LoadLibrary("Blink_SDK_C.dll")
@@ -45,7 +46,8 @@ class SLMsdk():
         # Turn the SLM power on
         self.SLM_power_func(self.sdk, c_bool(1))
         
-
+        okay = self.Is_slm_transient_constructed_func(self.sdk, c_bool(1))
+        assert okay
         
     def init_functions(self):
     
@@ -93,6 +95,12 @@ class SLMsdk():
         # function will now return user readable error message
         self.error_func.restype = c_char_p
         
+        self.Is_slm_transient_constructed_func = self.slm_lib.Is_slm_transient_constructed
+        #for some reason giving this function an extra argument makes it work
+        self.Is_slm_transient_constructed_func.argtypes = (c_longlong, c_bool)
+        self.Is_slm_transient_constructed_func.restype = c_bool
+        
+
       
     def SLM_settings(self):
     
@@ -107,7 +115,7 @@ class SLMsdk():
         is_nematic_type = c_bool(1)
         RAM_write_enable = c_bool(1)
         use_GPU = c_bool(1)
-        max_transients = c_uint(20)
+        max_transients = c_uint(5)
         true_frames = c_int(3)
         
         # Call the Create_SDK constructor
@@ -136,16 +144,17 @@ class SLMsdk():
             self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 1, 0)
         else:
             self.Write_overdrive_image_func(self.sdk, 1, mask.ctypes.data_as(POINTER(c_ubyte)), 0, 0)
-            
-            
-            
+
     
-    def precalculate_and_load_first(self, mask_list, num_repeats = 1):
+    def precalculate_masks(self, mask_list, num_repeats = 1):
         
-        '''takes input mask_list, a list of numpy arrays containing phase masks'''
+        '''takes input mask_list, a list of numpy arrays containing phase masks
+           outputs pointers to memory location of precaculated masks
+        '''
         
         #list of pointers to locations of phase mask arrays in memory 
         mask_pointers = [mask.ctypes.data_as(POINTER(c_ubyte)) for mask in mask_list]
+               
     
         #counts how many bytes required to store mask. Initial value set here is ignored and overwritten by Calculate_transient_frames_func
         byte_count = c_uint(0)
@@ -155,10 +164,17 @@ class SLMsdk():
         # set to false if errors in mask writing 
         okay = True
         
-        for pt in mask_pointers:
+        for i,pt in enumerate(mask_pointers):
     
             if okay:
+            
                 # precalculate frames and save them to memory
+                #the the SLM into the previous phase and calculate transient frames
+                if i == 0:
+                    okay = self.Write_overdrive_image_func(self.sdk, 1, mask_pointers[-1], 0, 0)
+                else:
+                    okay = self.Write_overdrive_image_func(self.sdk, 1, mask_pointers[i-1], 0, 0)
+                    
                 okay = self.Calculate_transient_frames_func(self.sdk, pt, byte_count)
            
             if okay:
@@ -172,33 +188,25 @@ class SLMsdk():
             assert okay, 'Error writing precalculated frames to memory'
 
         #repeat the precalculated list
-        repeat_arrays = precalc_arrays * num_repeats        
-
-        okay = self.Write_transient_frames_func(self.sdk, c_int(1), repeat_arrays[0], c_bool(0), c_bool(1), c_uint(0))       
-        assert okay, 'Failed to write first frame to board'     
-        print('First mask loaded')
-
+        repeat_arrays = precalc_arrays * num_repeats    
+        
         return repeat_arrays
 
       
     def load_precalculated_triggered(self, repeat_arrays):
         
         okay = True
-        #write triggered masks to SLM     
-            
         print('Ready to trigger')
-        for i, arr in enumerate(repeat_arrays):
-
-            assert okay, 'Failed to write frames to board'
-         
-            #the first frame should be already loaded
-            # NEED TO COMMENT THIS OUT TO USE AUTO_NAPARM IN CURRENT STATE!!!!
-            if i == 0: continue
-                
-            #trigger remaining frames           
+        
+        # Write_transient_frames_func = self.slm_lib.Write_transient_frames
+        # Write_transient_frames_func.argtypes = (c_longlong, c_int, POINTER(c_ubyte), c_bool, c_bool, c_uint)
+        # Write_transient_frames_func.restype = c_bool
+        
+        for arr in repeat_arrays:
+          
             okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
-            print('Trigger recieved, loaded mask {}'.format(i))
-            
+
+        assert okay, 'Failed to write frames to board'      
         print('completed trigger sequence')
                 
         
@@ -206,12 +214,12 @@ class SLMsdk():
         
         ''' power down and disconnect kernel from SLM '''
         
-        # Always call Delete_SDK before exiting
-        self.Delete_SDK_func(self.sdk, c_bool(1))
-        
         # Turn the SLM power off
         self.SLM_power_func(self.sdk, c_bool(0))
         
+        # Always call Delete_SDK before exiting
+        self.Delete_SDK_func(self.sdk, c_bool(1))
+
         print('Disconnected from SLM and powered down')
 
 

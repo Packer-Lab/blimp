@@ -120,7 +120,7 @@ class ParseMarkpoints():
         assert n_groups > 1, 'must give at least 2 markpoints strings to concantenate'
      
         all_groups = ''
-        
+
         for idx, group in enumerate(group_list):
                      
             #pop off the -mp from all groups following group 1
@@ -128,13 +128,14 @@ class ParseMarkpoints():
                 group = group[4:]
             
             all_groups += group
-            
+
             # add the inter group interval if it is not the final group
             if idx != n_groups-1 and not SLM_trigger:
                             
                 all_groups += ' ' + str(inter_group_interval) + ' '     
             
             elif idx != n_groups-1 and SLM_trigger:     
+
             
                 #the x and y values of the group just stimmed
                 x = (group.split(' ')[1] if idx == 0 else group.split(' ')[0])
@@ -142,16 +143,23 @@ class ParseMarkpoints():
                 
                 trigger_string = self.misc_stims(x, y, 'trigger', inter_group_interval=inter_group_interval)
                 all_groups += trigger_string
+            
+            # # add the initial trigger
+            if SLM_trigger and idx == 0:
+                all_groups = '-mp ' + trigger_string[5:] + all_groups[4:]
+        
                 
         # repeat this string if required (uses trigger galvo position of last group in repeat
         if n_repeats > 1:
-            repeat_string = trigger_string + all_groups[4:]
+            repeat_string = '0.12 ' + all_groups[4:]
             all_groups = all_groups + (repeat_string * (n_repeats-1)) 
           
         #get rid of random space on end
         all_groups = all_groups[:-1]
 
         return all_groups
+        
+        
 
     def misc_stims(self, x, y, stim_type, inter_group_interval=None):
     
@@ -169,7 +177,7 @@ class ParseMarkpoints():
         
         elif stim_type == 'trigger':
         
-            trigger_len = 5 #ms
+            trigger_len = 3 #ms
             
             #how long to delay between trigger and next spiral
             delay = inter_group_interval - trigger_len - 0.12   

@@ -8,6 +8,7 @@ sys.path.append("..")
 from utils.parse_markpoints import ParseMarkpoints
 from utils.prairie_interface import PrairieInterface
 from utils import mat_loader as ml
+from utils.utils_funcs import threshold_detect
 from sdk.slm_sdk import SLMsdk
 import scipy.io
 import yaml
@@ -54,23 +55,19 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         self.num_groups = len(self.mask_list)
         self.stim_timings()
         try:
-            sdk = SLMsdk()
-            sdk.SLM_connect()
+            self.sdk = SLMsdk()
+            self.sdk.SLM_connect()
             
-            mask_pointers = sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
+            mask_pointers = self.sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
             
-            slm_thread = Thread(target=sdk.load_precalculated_triggered, args = [mask_pointers])
+            slm_thread = Thread(target=self.sdk.load_precalculated_triggered, args = [mask_pointers])
             slm_thread.start()
         except:
             print(colored('I COULD NOT CONNECT TO THE SLM CLOSE BLINK / OTHER AUTONAPARMS I WILL TRY AGAIN IN 5 SECONDS','yellow','on_red', attrs=['reverse', 'blink']))
             time.sleep(5)
             AutoNaparm2(self.naparm_path)
-            
-            
-            
-            
 
-        
+
         self.new_xml()
         
         
@@ -105,48 +102,66 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         
         pv_arr = np.fromfile(self.to_pv, dtype=float)
         slm_arr = np.fromfile(self.to_slm, dtype=float)
-        
+
         self.total_time = len(slm_arr) / self.naparm_rate
         
-        #time between each SLM trigger
-        self.slm_diff = np.diff(np.where(np.diff(slm_arr) > 0))[0] / self.naparm_rate * 1000 #ms 
-
-        #the time between each PV trigger
-        self.pv_diff = np.diff(np.where(np.diff(pv_arr) > 0))[0] / self.naparm_rate * 1000  #ms
-
-        #assumes that there is a trigger at t=0
-        num_stims = len(np.where(np.diff(pv_arr) > 0)[0]) + 1
-        self.n_repeats = num_stims / self.num_groups 
+        slm_times = threshold_detect(slm_arr, 1)
+        pv_times = threshold_detect(pv_arr, 1)
+        
+        self.n_repeats = len(slm_times) / self.num_groups
         assert self.n_repeats.is_integer()
         self.n_repeats = int(self.n_repeats)
+        
+        slm_diff = np.diff(slm_times)
+        
+        # time difference between groups on each trial
+        self.inter_group_intervals = slm_diff[0:self.num_groups-1]
+        #the time difference between groups of stimulations
+        self.inter_trial_interval = slm_diff[self.num_groups-1]
+
         
     def new_xml(self):
         
         tree = etree.parse(self.xml_path)
         root = tree.getroot()
-        
+
         markpoint_elems = root.findall('PVMarkPointElement')
         
-        stim_length = int(self.durations[0]) * int(self.repetitions[0])
-        inter_group_interval = self.slm_diff[0]
         for i,point in enumerate(markpoint_elems):
-    
-            #dont change the dummy
-            if point.attrib['UncagingLaserPower'] == '0': 
-                mute_point = False
-            else:
-                mute_point = True
 
-            if mute_point:       
-                point.attrib['TriggerFrequency'] = 'Never'
-                galvo_elem_point = next(node for node in point.getiterator() if node.tag == 'PVGalvoPointElement')
-                galvo_elem_point.attrib['InitialDelay'] = str(inter_group_interval - stim_length)
+
             
+            # mutate xml elems so no external trigger required    
+            point.attrib['TriggerFrequency'] = 'Never'
             
+            galvo_elem_point = next(node for node in point.getiterator() if node.tag == 'PVGalvoPointElement')
+            
+            #information about each group from ParseMarkpoints does not include dummy
+            group_idx = i-1
+            
+            # durations and repetitions are from the ParseMarkpoints class
+            stim_length = int(self.durations[group_idx]) * int(self.repetitions[group_idx])
+            # this is a diff so has len durations - 1
+            inter_group_interval = self.inter_group_intervals[group_idx-1]
+            
+            if i == 0:
+                assert point.attrib['UncagingLaserPower'] == '0', 'Need to use naparm with dummy'
+                galvo_elem_point.attrib['InitialDelay']  = str(self.inter_trial_interval - stim_length)
+                #dont change the dummy
+                continue
+            
+            #if i == 1:  
+                #the first group should be delayed by the intertrial interval.
+                # This means that the onset of stimulation will be delay by the inter-trial-interval
+            #    galvo_elem_point.attrib['InitialDelay']  = str(self.inter_trial_interval - stim_length)
+            #else:
+            galvo_elem_point.attrib['InitialDelay'] = str(inter_group_interval - stim_length)
+
+            #add the trigger lasers
             slm_trigger = copy.deepcopy(point)
-            
+
             slm_trigger.attrib['UncagingLaser'] = 'Trigger'
-            slm_trigger.attrib['UncagingLaserPower'] = '5' #this is 1000 PV in weird xml speak
+            slm_trigger.attrib['UncagingLaserPower'] = '5' #volts (1000 PV)
             slm_trigger.attrib['AsyncSyncFrequency'] = 'None'
             slm_trigger.attrib['Repetitions'] = '1'
 
@@ -155,12 +170,13 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
             galvo_elem_slm.attrib['InitialDelay'] = '0'
             galvo_elem_slm.attrib['Duration'] = '1'
             galvo_elem_slm.attrib['SpiralRevolutions'] = '1'
-
             
-            if i != len(markpoint_elems) - 1:
-                parent = point.getparent()
-                parent.insert(parent.index(point)+1, slm_trigger)
+            #if i != len(markpoint_elems) - 1:
+            parent = point.getparent()
+            parent.insert(parent.index(point)+1, slm_trigger)
+            
                 
+                    
         self.autoxml_path = self.xml_path[:-4] + '_AutoNaparmXML.xml'        
         
         
@@ -168,11 +184,14 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         
         self.pl.SendScriptCommands('-LoadMarkPoints {}'.format(self.autoxml_path))
         self.pl.SendScriptCommands('-LoadMarkPoints {} True'.format(self.gpl_path))
-        
-        
+
         
     def fire(self):
+        print('naparm fired')
         self.pl.SendScriptCommands('-MarkPoints')
+        
+    def disconnect(self):
+        self.sdk.SLM_disconnect()
         
 
         
@@ -243,7 +262,9 @@ if __name__ == '__main__':
     clear()
     
     Screen.wrapper(startup_animation)
-    
+        
+    #while True:
+        
     print(colored('Paste Naparm path below to begin','white','on_red', attrs=['reverse', 'blink']))
 
     
@@ -260,11 +281,11 @@ if __name__ == '__main__':
     #initialise auto naparm
     an = AutoNaparm2(naparm_path= naparm_path)
     
-    t_series = query_yes_no('Do you want to image during this Naparm? SORRY THIS IS CURRENTLY NOT IMPLEMENTED DO IT MANUALLY')
+    #t_series = query_yes_no('Do you want to image during this Naparm? SORRY THIS IS CURRENTLY NOT IMPLEMENTED DO IT MANUALLY')
     #take me out at some point
     t_series = False
-    print(colored('This Naparm will take {} seconds, if you want to image please update PV t-series settings'.format(an.total_time), 'white'))
-    print(colored('DONT FORGET TO RECORD A PAQ!!!'.format(an.total_time), 'white'))
+    print(colored('This Naparm will take {} seconds, if you want to image please update PV t-series settings'.format(an.total_time), 'yellow'))
+    print(colored('DONT FORGET TO RECORD A PAQ!!!'.format(an.total_time), 'yellow'))
     
     if t_series:
         print(colored('OK, initialising matlab engine for read raw data stream', 'yellow'))
@@ -282,13 +303,22 @@ if __name__ == '__main__':
             # eng.PrairieLink_RawDataStream(nargout=0)
         
         an.fire()
+        
+        #time.sleep(an.total_time + 1)
+            
+
     else:
-        print(colored('GOODBYE', 'red'))
+        print(colored('OK try again', 'red'))
         time.sleep(2)
-        sys.exit()
-                    
-                    
-                    
+
+        #an.disconnect()
+        
+        #clear()
+        
+        #if ready:
+        #    print(colored('*************Naparm complete********************', 'red'))
+                        
+                        
                     
                     
                     

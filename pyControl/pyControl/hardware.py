@@ -489,12 +489,14 @@ class Rsync(IO_object):
         assert 0.1*mean_IPI > pulse_dur, '0.1*mean_IPI must be greater than pulse_dur'
         self.sync_pin = pyb.Pin(pin, pyb.Pin.OUT)
         self.event_name = event_name
+        print(event_name)
         self.pulse_dur = pulse_dur       # Sync pulse duration (ms)
         self.min_IPI = int(0.1*mean_IPI) 
         self.max_IPI = int(1.9*mean_IPI)
         assign_ID(self)
 
     def _initialise(self):
+        print('yup')
         self.event_ID  = fw.events[self.event_name] if self.event_name in fw.events else False
 
     def _run_start(self): 
