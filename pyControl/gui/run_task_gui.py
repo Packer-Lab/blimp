@@ -1,3 +1,6 @@
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import os
 import sys
 from pyqtgraph.Qt import QtGui, QtCore
@@ -17,6 +20,8 @@ from config.gui_settings import update_interval
 
 from gui.dialogs import Settings_dialog, Board_config_dialog, Variables_dialog
 from gui.plotting import Task_plotter
+
+
 
 # Run_task_gui ------------------------------------------------------------------------
 

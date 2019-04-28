@@ -29,11 +29,15 @@ class AllCells():
         
         group_list = []
         
+        print('warning have hacked power so manually input PV')
+        pv_power = self.Blimp.mWperCell
+        print('PV power is {}'.format(pv_power))
+        
         
         for group in range(num_groups):
                 
             #the shape of the point array shows the group size
-            group_size = np.asarray(all_points['points_array'][group]).shape[0]
+            #group_size = np.asarray(all_points['points_array'][group]).shape[0]
             
             #mW_power = group_size * self.Blimp.mWperCell  
             #print('group size is {}'.format(group_size))
@@ -41,9 +45,7 @@ class AllCells():
             
             #pv_power = self.Blimp.eng.mw2pv(mW_power)
             #print('PV power is {}'.format(pv_power))
-            print('warning have hacked power so manually input PV')
-            pv_power = self.Blimp.mWperCell
-            print('PV power is {}'.format(pv_power))
+           
             
             # string for each group is nested in list for each percent
             group_string = self.Blimp.build_strings (X = galvo_x[group], Y = galvo_y[group], \

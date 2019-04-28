@@ -3,6 +3,7 @@ import ruamel.yaml
 from sdk.slm_sdk import SLMsdk
 from utils.prairie_interface import PrairieInterface
 from utils.parse_markpoints import ParseMarkpoints
+from utils.utils_funcs import load_mat_file
 import sys
 import os
 from datetime import datetime
@@ -10,6 +11,9 @@ import time
 import matlab.engine
 from pathlib import Path
 import experiments
+from distutils.dir_util import copy_tree
+
+
 
 
 class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
@@ -67,14 +71,29 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
                 time.sleep(5)
                 raise
             
-            #start the matlab engine
-            print('Initialising matlab engine')
-            self.eng = matlab.engine.start_matlab()
-            print('matlab engine initialised')
+            if yaml_dict['redo_naparm']:
+            
+                #start the matlab engine
+                print('Initialising matlab engine')
+                self.eng = matlab.engine.start_matlab()
+                print('matlab engine initialised')
 
-            # get the points object for all target points
-            points_obj = self.eng.Main(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
-            self.all_points = points_obj['all_points']
+                # get the points object for all target points
+                points_obj = self.eng.Main(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
+                self.all_points = points_obj['all_points']
+                
+            else:
+                points_path = next(os.path.join(self.naparm_path,file) for file in os.listdir(self.naparm_path) if file.endswith('_Points.mat'))
+                self.all_points = load_mat_file(points_path)['points']
+                #copy the phase masks
+                copy_tree(os.path.join(self.naparm_path, 'PhaseMasks'), os.path.join(self.output_folder, 'PhaseMasks'))
+                #copy the whole naparm directory in case of future issues
+                copy_tree(self.naparm_path, os.path.join(self.output_folder, 'naparm'))
+                
+                
+                    
+            
+            
             
             # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
             self.SLM_tnums = []

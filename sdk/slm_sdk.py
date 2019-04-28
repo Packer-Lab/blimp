@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import imageio
 import tifffile
+
 class SLMsdk():
 
     def __init__(self, LUT = 'slm_h2_encrypt_noPhaseWrap.txt', blank_image = "512white.bmp"):
@@ -17,7 +18,6 @@ class SLMsdk():
         abspath = os.path.abspath(__file__)
         dname = os.path.dirname(abspath)
         os.chdir(dname)
-        print("hello")
         
         #load dlls
         cdll.LoadLibrary("Blink_SDK_C.dll")
@@ -164,19 +164,21 @@ class SLMsdk():
         # set to false if errors in mask writing 
         okay = True
         
-        for i,pt in enumerate(mask_pointers):
-    
+        for i,current_pointer in enumerate(mask_pointers):
+            
+            #the next pointer in the list with wrapping
+            next_pointer = mask_pointers[(i+1) % len(mask_pointers)]
+            
             if okay:
             
                 # precalculate frames and save them to memory
                 #the the SLM into the previous phase and calculate transient frames
-                if i == 0:
-                    okay = self.Write_overdrive_image_func(self.sdk, 1, mask_pointers[-1], 0, 0)
-                else:
-                    okay = self.Write_overdrive_image_func(self.sdk, 1, mask_pointers[i-1], 0, 0)
-                    
-                okay = self.Calculate_transient_frames_func(self.sdk, pt, byte_count)
-           
+                #if i == 0:                   
+                okay = self.Calculate_transient_frames_func(self.sdk, current_pointer, byte_count)
+              
+                #okay = self.Calculate_transient_frames_func(self.sdk, next_pointer, byte_count)
+
+               
             if okay:
                 # empty character array to store precalculated frame
                 precalc_array = (c_ubyte * byte_count.value)()   
@@ -197,14 +199,12 @@ class SLMsdk():
         
         okay = True
         print('Ready to trigger')
+
         
-        # Write_transient_frames_func = self.slm_lib.Write_transient_frames
-        # Write_transient_frames_func.argtypes = (c_longlong, c_int, POINTER(c_ubyte), c_bool, c_bool, c_uint)
-        # Write_transient_frames_func.restype = c_bool
-        
-        for arr in repeat_arrays:
+        for i, arr in enumerate(repeat_arrays):
           
             okay = self.Write_transient_frames_func(self.sdk, c_int(1), arr, c_bool(1), c_bool(1), c_uint(0))
+            print('wrote mask {} of {}'.format(i, len(repeat_arrays)))
 
         assert okay, 'Failed to write frames to board'      
         print('completed trigger sequence')
@@ -221,6 +221,43 @@ class SLMsdk():
         self.Delete_SDK_func(self.sdk, c_bool(1))
 
         print('Disconnected from SLM and powered down')
+        
+        
+############### example usage ####################
+if __name__ == '__main__':
+
+    test_masks_path = r'C:\Users\User\Documents\Code\SLM\Test masks\8bit_tiffs'
+    
+    tiff_list = []
+
+    for file in os.listdir(test_masks_path):
+        if file.endswith('.tif') or file.endswith('.tiff'):
+            tiff_list.append(os.path.join(test_masks_path, file))
+
+    mask_list = [tifffile.imread(mask) for mask in tiff_list]
+    
+    sdk = SLMsdk()
+    
+    sdk.SLM_connect()
+    
+    repeat_arrays = sdk.precalculate_masks(mask_list)
+    
+    sdk.load_precalculated_triggered(repeat_arrays)
+    
+    sdk.SLM_disconnect()
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -7,8 +7,7 @@ sys.path.append("..")
 
 from utils.parse_markpoints import ParseMarkpoints
 from utils.prairie_interface import PrairieInterface
-from utils import mat_loader as ml
-from utils.utils_funcs import threshold_detect
+from utils.utils_funcs import threshold_detect, load_mat_file
 from sdk.slm_sdk import SLMsdk
 import scipy.io
 import yaml
@@ -54,18 +53,18 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         self.mask_list = self.convert_tiffs(self.tiff_list)
         self.num_groups = len(self.mask_list)
         self.stim_timings()
-        try:
-            self.sdk = SLMsdk()
-            self.sdk.SLM_connect()
-            
-            mask_pointers = self.sdk.precalculate_and_load_first(self.mask_list, num_repeats=self.n_repeats)
-            
-            slm_thread = Thread(target=self.sdk.load_precalculated_triggered, args = [mask_pointers])
-            slm_thread.start()
-        except:
-            print(colored('I COULD NOT CONNECT TO THE SLM CLOSE BLINK / OTHER AUTONAPARMS I WILL TRY AGAIN IN 5 SECONDS','yellow','on_red', attrs=['reverse', 'blink']))
-            time.sleep(5)
-            AutoNaparm2(self.naparm_path)
+        #try:
+        self.sdk = SLMsdk()
+        self.sdk.SLM_connect()
+        
+        mask_pointers = self.sdk.precalculate_masks(self.mask_list, num_repeats=self.n_repeats)
+        
+        slm_thread = Thread(target=self.sdk.load_precalculated_triggered, args = [mask_pointers])
+        slm_thread.start()
+        # except:
+            # print(colored('I COULD NOT CONNECT TO THE SLM CLOSE BLINK / OTHER AUTONAPARMS I WILL TRY AGAIN IN 5 SECONDS','yellow','on_red', attrs=['reverse', 'blink']))
+            # time.sleep(5)
+            # AutoNaparm2(self.naparm_path)
 
 
         self.new_xml()
@@ -109,6 +108,7 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         pv_times = threshold_detect(pv_arr, 1)
         
         self.n_repeats = len(slm_times) / self.num_groups
+        
         assert self.n_repeats.is_integer()
         self.n_repeats = int(self.n_repeats)
         
@@ -140,23 +140,25 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
             group_idx = i-1
             
             # durations and repetitions are from the ParseMarkpoints class
-            stim_length = int(self.durations[group_idx]) * int(self.repetitions[group_idx])
+            stim_length = (int(self.durations[group_idx]) + 0.12) * int(self.repetitions[group_idx])
             # this is a diff so has len durations - 1
             inter_group_interval = self.inter_group_intervals[group_idx-1]
             
+            #time in ms to move galvos to trigger position (not actually moved) and deliver the trigger
+            trigger_len = 1.12
+            
             if i == 0:
                 assert point.attrib['UncagingLaserPower'] == '0', 'Need to use naparm with dummy'
-                galvo_elem_point.attrib['InitialDelay']  = str(self.inter_trial_interval - stim_length)
-                #dont change the dummy
+                #delay by the time between the end of one trial and the start of the next - the delay of the trigger
+                galvo_elem_point.attrib['InitialDelay']  = str(self.inter_trial_interval - inter_group_interval - trigger_len)
+                continue
+
+
+            galvo_elem_point.attrib['InitialDelay'] = '0'
+            
+            if i == len(markpoint_elems) - 1:
                 continue
             
-            #if i == 1:  
-                #the first group should be delayed by the intertrial interval.
-                # This means that the onset of stimulation will be delay by the inter-trial-interval
-            #    galvo_elem_point.attrib['InitialDelay']  = str(self.inter_trial_interval - stim_length)
-            #else:
-            galvo_elem_point.attrib['InitialDelay'] = str(inter_group_interval - stim_length)
-
             #add the trigger lasers
             slm_trigger = copy.deepcopy(point)
 
@@ -166,14 +168,22 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
             slm_trigger.attrib['Repetitions'] = '1'
 
             galvo_elem_slm = next(node for node in slm_trigger.getiterator() if node.tag == 'PVGalvoPointElement')
+            
 
-            galvo_elem_slm.attrib['InitialDelay'] = '0'
+            galvo_elem_slm.attrib['InitialDelay'] = str(inter_group_interval - stim_length - trigger_len) 
+            
             galvo_elem_slm.attrib['Duration'] = '1'
             galvo_elem_slm.attrib['SpiralRevolutions'] = '1'
             
-            #if i != len(markpoint_elems) - 1:
             parent = point.getparent()
             parent.insert(parent.index(point)+1, slm_trigger)
+            
+            #save the slm trigger with galvos at point 1 for appending to start after main loop
+            if i == 1:
+                slm_trigger_1 = copy.deepcopy(slm_trigger)
+            
+         
+        root.insert(1, slm_trigger_1)
             
                 
                     
@@ -187,7 +197,7 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
 
         
     def fire(self):
-        print('naparm fired')
+        print('Beginning naparm sequence')
         self.pl.SendScriptCommands('-MarkPoints')
         
     def disconnect(self):

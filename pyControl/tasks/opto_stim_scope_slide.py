@@ -23,7 +23,7 @@ v.lick_window = 0.01  # reward time window during which mouse has to lick (s)
 
 # inter-trial-interval parameters
 v.withold_len = [x / 1000 for x in range(40, 61)] #time that the animal must withold licking, a list in 0.1 increments from 4-6, that can be sampled randomly
-v.ITI = 5 # the inter-trial interval(S). This is also the time during which rewards are registered as recieved if the animal licks
+v.ITI = 2 # the inter-trial interval(S). This is also the time during which rewards are registered as recieved if the animal licks
 
 
 v.total_SLM = 300
