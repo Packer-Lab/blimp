@@ -7,8 +7,14 @@ import numpy as np
 from threading import Thread, active_count
 import tifffile
 import imageio
-import multiprocessing as mp
+import asyncio
+import multiprocessing
 from multiprocessing import Process
+from concurrent.futures import ProcessPoolExecutor
+import concurrent
+
+from multiprocessing import Pool
+
 
 class AllCells():
 
@@ -75,12 +81,22 @@ class AllCells():
         ##the threaded function
         slm_thread = Thread(target=self.Blimp.load_precalculated_triggered, args = [self.repeat_arrays])
         slm_thread.start()
-        
-        time.sleep(0.1)
+
+
+        time.sleep(0.01)
         
         # this function laods the 15ms trigger sequences to the hardware and begins the sequence 
         self.mp_output = self.Blimp.pl.SendScriptCommands(self.all_groups_mp)
         self.Blimp.write_output(self.Blimp.trial_runtime, self.Blimp.trial_number, self.Blimp.barcode, 'all_cells_stimulated')
+        
+
+        
+        
+
+                        
+def unwrap_self_f(arg, **kwarg):
+    
+    return AllCells.Blimp.load_precalculated_triggered(*arg, **kwarg)
         
         
         
