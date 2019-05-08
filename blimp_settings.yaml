@@ -26,11 +26,14 @@ spiral_revolutions: 5
 #### behaviour settings ####
 
 #blimp experiment to run
-experiment: AllCells
-#the number of subset iterations for a percent cells experiment
-num_subsets: 1
-#list of the percents of cells to stim in a percent cells experiment
-percents: [90, 50]
+experiment: Subsets
+#list of the percents of cells to stim in a subsets experiment
+subset_sizes: [10,5]
+#the number of subset permutations for a subsets experiment
+#i.e. if subset_perms=3, each subset size will have 3 different
+#subsets of cells to be randomly selected from
+subset_perms: 1
+
 
 ########################################################
 
