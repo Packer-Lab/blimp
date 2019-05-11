@@ -3,7 +3,7 @@ import ruamel.yaml
 from sdk.slm_sdk import SLMsdk
 from utils.prairie_interface import PrairieInterface
 from utils.parse_markpoints import ParseMarkpoints
-from utils.utils_funcs import load_mat_file
+from utils.utils_funcs import load_mat_file, tangent
 import sys
 import os
 from datetime import datetime
@@ -15,7 +15,6 @@ from distutils.dir_util import copy_tree
 
 
 
-
 class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
 
     def __init__(self):
@@ -23,56 +22,57 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         '''detailed description goes here'''
 
         # alows stopping and starting in the pycontrol gui
-        if not hasattr(self, 'im_init'):
+        if not hasattr(self, '_im_init'):
 
             #load yaml
-            base_path = os.path.dirname(__file__)
-            yaml_path = os.path.join(base_path, "blimp_settings.yaml")
+            _base_path = os.path.dirname(__file__)
+            _yaml_path = os.path.join(_base_path, "blimp_settings.yaml")
 
             #the ruamel module preserves the comments and order of the yaml file
-            yaml = ruamel.yaml.YAML()
-            with open(yaml_path, 'r') as stream:
-                yaml_dict = yaml.load(stream)
+            _yaml = ruamel.yaml.YAML()
+            with open(_yaml_path, 'r') as stream:
+                self.yaml_dict = _yaml.load(stream)
 
             self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
 
-            self.naparm_path = yaml_dict['naparm_path']
+            self.naparm_path = self.yaml_dict['naparm_path']
 
-            output_path = yaml_dict['output_path']
-            self.output_folder = os.path.join(output_path, self.time_now)
+            _output_path = self.yaml_dict['output_path']
+            self.output_folder = os.path.join(_output_path, self.time_now)
 
             if not os.path.exists(self.output_folder):
                 os.makedirs(self.output_folder)
 
             # save the current settings yaml into the todays folder
             with open(os.path.join(self.output_folder, '{}_blimp_settings.yaml'.format(self.time_now)), 'w+') as f:
-                yaml.dump(yaml_dict, f)
+                _yaml.dump(self.yaml_dict, f)
 
-            self.group_size = yaml_dict['group_size']
+            # not uses in the subsets experiment
+            self.group_size = self.yaml_dict['group_size']
 
-            self.duration = yaml_dict['duration']
-            self.num_spirals = yaml_dict['num_spirals']
-            self.spiral_revolutions = yaml_dict['spiral_revolutions']
-            self.mWperCell = yaml_dict['mWperCell']
-            self.inter_group_interval = yaml_dict['inter_group_interval']
-            self.num_repeats = yaml_dict['num_repeats']
-
+            self.duration = self.yaml_dict['duration']
+            self.num_spirals = self.yaml_dict['num_spirals']
+            self.spiral_revolutions = self.yaml_dict['spiral_revolutions']
+            self.mWperCell = self.yaml_dict['mWperCell']
+            self.inter_group_interval = self.yaml_dict['inter_group_interval']
+            self.num_repeats = self.yaml_dict['num_repeats']
+            
             #calculate spiral size as 0-1 ratio of fov size
-            self.spiral_size = yaml_dict['spiral_size'] / (yaml_dict['FOVsize_UM_1x'] / yaml_dict['zoom'])
+            self.spiral_size = self.yaml_dict['spiral_size'] / (self.yaml_dict['FOVsize_UM_1x'] / self.yaml_dict['zoom'])
 
             # initialise the SLM sdk and prarie interface, inheriting attributes from these classses
-            SLMsdk.__init__(self)
-            PrairieInterface.__init__(self)
-            ParseMarkpoints.__init__(self)
+            self.sdk = SLMsdk()
+            self.prairie = PrairieInterface()
+            self.mp_parser = ParseMarkpoints()
             # connect to the SLM
             try:
-                self.SLM_connect()
+                self.sdk.SLM_connect()
             except:
                 print('close other SLM connections')
                 time.sleep(5)
                 raise
 
-            if yaml_dict['redo_naparm']:
+            if self.yaml_dict['redo_naparm']:
 
                 #start the matlab engine
                 print('Initialising matlab engine')
@@ -80,12 +80,12 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
                 print('matlab engine initialised')
 
                 # get the points object for all target points
-                points_obj = self.eng.Main(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
-                self.all_points = points_obj['all_points']
+                _points_obj = self.eng.Main(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
+                self.all_points = _points_obj['all_points']
 
             else:
-                points_path = next(os.path.join(self.naparm_path,file) for file in os.listdir(self.naparm_path) if file.endswith('_Points.mat'))
-                self.all_points = load_mat_file(points_path)['points']
+                _points_path = next(os.path.join(self.naparm_path,file) for file in os.listdir(self.naparm_path) if file.endswith('_Points.mat'))
+                self.all_points = load_mat_file(_points_path)['points']
                 #copy the phase masks
                 copy_tree(os.path.join(self.naparm_path, 'PhaseMasks'), os.path.join(self.output_folder, 'PhaseMasks'))
                 #copy the whole naparm directory in case of future issues
@@ -98,55 +98,61 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             # the times of the SLM trials
             self.SLM_times = []
 
-            self.run_time_prev = 0
+            self._run_time_prev = 0
 
             #get the experiment function defined in the yaml
             try:
-                self.experiment_class = getattr(experiments, yaml_dict['experiment'])
+                self.experiment_class = getattr(experiments, self.yaml_dict['experiment'])
             except:
                 raise Exception('Could not find experiment defined in yaml')
 
 
-            # inits the experiment class with Blimp attributes (this is probably a horrible way of doing this)
+            # inits the experiment class with and instance of the Blimp class (this is probably a horrible way of doing this)
             self.experiment = self.experiment_class(self)
 
             #set the uncaging laser power to 0 and open the uncaging shutter
-            self.pl.SendScriptCommands('-SetLaserPower Uncaging 0')
+            self.prairie.pl.SendScriptCommands('-SetLaserPower Uncaging 0')
             time.sleep(1)
-            self.pl.SendScriptCommands('-OverrideHardShutter Uncaging open')
+            self.prairie.pl.SendScriptCommands('-OverrideHardShutter Uncaging open')
 
             # dont init the class more than once
-            self.im_init = True
+            self._im_init = True
+
+    def mw2pv(self, x):
+        '''returns the PV value required for specific PV value based on DigitalPowerMeasurments notebook fitting'''
+        _popt_path = self.yaml_dict['popt_path']
+        _popt = np.load(_popt_path)
+
+        return(tangent(x, *_popt))
 
 
-    def update(self, new_data, run_time):
+
+    def update(self, new_data, _run_time):
 
         ''' called every time there is a new print, state or event in pycontrol '''
 
         #all prints that occur from the board
-        pycontrol_print = [nd for nd in new_data if nd[0] == 'P']
+        _pycontrol_print = [nd for nd in new_data if nd[0] == 'P']
 
-        x = [nd for nd in new_data]
-
-        if run_time < self.run_time_prev:
+        if _run_time < self._run_time_prev:
             self.__init__()
 
-        self.run_time_prev = run_time
+        self._run_time_prev = _run_time
         # break function if no new print statement is found
-        if pycontrol_print:
-            pycontrol_print = pycontrol_print[0][2]
+        if _pycontrol_print:
+            _pycontrol_print = _pycontrol_print[0][2]
         else:
             return
 
 
         # an SLM trial is initiated
-        if 'Trigger SLM trial' in pycontrol_print:
+        if 'Trigger SLM trial' in _pycontrol_print:
 
-            self.trial_runtime = round(run_time,4) # dont need more than ms precision
+            self.trial_runtime = round(_run_time,4) # dont need more than ms precision
             # search the SLM trial string for the number and barcode
-            space_split = pycontrol_print.split(' ')
-            self.trial_number = [space_split[i+1] for i,word in enumerate(space_split) if word == 'Number'][0]
-            self.barcode = [space_split[i+1] for i,word in enumerate(space_split) if word == 'Barcode'][0]
+            __space_split = _pycontrol_print.split(' ')
+            self.trial_number = [_space_split[i+1] for i,word in enumerate(_space_split) if word == 'Number'][0]
+            self.barcode = [_space_split[i+1] for i,word in enumerate(_space_split) if word == 'Barcode'][0]
 
             #append to the alignment lists
             self.SLM_tnums.append(self.trial_number)

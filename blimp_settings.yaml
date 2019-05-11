@@ -1,25 +1,32 @@
 #### photostimulation settings ####
 
 # path to the naparm folder containing points for experiments
-naparm_path: F:\Data\jrowland\2019-04-13\naparm\2019-04-13_plasticSlide_NAPARM_001
+naparm_path: E:\Data\jrowland\2019-05-01\naparm\2019-05-01_RL022_NAPARM_002
+#path to popt from DigitalPowerMeasurments
+popt_path: E:\PowerMeasurements\2019-05-10\2019-05-10_uncaging_slm_single_spot_1030_popt.npy
+#whether to recalculate phase masks, groups etc in blimp, rather than using those made in naparm
+redo_naparm: True
 
 # zoom you are imaging at, used only for spiral size
 zoom: 2
 # duration of each spiral (ms)
-duration: 100
+duration: 10
 #number of times to repeat spirals on each cell
-num_spirals: 10
+num_spirals: 1
+# the number of times to repeat going through round each group per trial
+num_repeats: 10
 # number of cells per group
-group_size: 7
+group_size: 25
 # power on sample / cell (18 mW is good for a burn)
 # this is processed using the mw2pv matlab function which should be in the path 
-mWperCell: 18
+################ warning this currently = PV power for whole groups as hacked it ########################
+mWperCell: 529
 #time between groups (ms) -- should be at least 5
-inter_group_interval: 30
+inter_group_interval: 5
 #size of spiral (um) 
 spiral_size: 15
 #number of revolutions each spiral will turn
-spiral_revolutions: 5
+spiral_revolutions: 3
 
 ########################################################
 
@@ -27,12 +34,10 @@ spiral_revolutions: 5
 
 #blimp experiment to run
 experiment: Subsets
-#list of the percents of cells to stim in a subsets experiment
-subset_sizes: [10,5]
-#the number of subset permutations for a subsets experiment
-#i.e. if subset_perms=3, each subset size will have 3 different
-#subsets of cells to be randomly selected from
+#the number of permuatations for each subset for a subset experiment
 subset_perms: 1
+#list of the percents of cells to stim in a percent cells experiment
+subset_sizes: [5,10,20]
 
 
 ########################################################
@@ -42,4 +47,4 @@ subset_perms: 1
 # should be same as naparm setting
 FOVsize_UM_1x: 1118.5
 #path to save blimp outputs, updated automatically in startup_gui.py
-output_path: F:\Data\jrowland\2019-04-13\blimp
+output_path: E:\Data\jrowland\2019-05-01\blimp

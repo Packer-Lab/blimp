@@ -13,7 +13,7 @@ class Subsets():
         experiment to run a random subset of cells, defined in the subset_sizes list
         currently only works with a single group of size subset_sizes[idx]
 
-        inherits blimp attributes (this may be angering the python gods)
+        inherits an instance of the Blimp class
 
         '''
         self.Blimp = Blimp
@@ -22,13 +22,13 @@ class Subsets():
 
         self.subset_perms = self.Blimp.yaml_dict['subset_perms']
 
-        #percents, duplicated by number of subsets
+        #subset size, duplicated by number of permuations 
         self.subset_sizes = self.Blimp.yaml_dict['subset_sizes']
 
         # the path to each percent save file, will percentage (p) and subset iteration (s) in file name
         self.subset_paths = [os.path.join(self.save_path, str(p) + '_' + str(s))  for p in self.subset_sizes for s in range(self.subset_perms)]
 
-        self.markpoints_strings, self.precalc_masks = init_trials(self)
+        self.markpoints_strings, self.precalc_masks = self.init_trials()
 
         #makes iterating easier
         self.subset_sizes = self.subset_sizes * self.subset_perms
@@ -44,7 +44,7 @@ class Subsets():
 
         for subset, path in zip(self.subset_sizes, self.subset_paths):
 
-            point_obj = self.Blimp.eng.PointsProcessor(self.Blimp.naparm_path, 'processAll', 0, 'GroupSize', , 'splitPoints', 1, 'splitPercent', float(percent), 'Save', 1, 'SavePath', path)
+            point_obj = self.Blimp.eng.Main(self.Blimp.naparm_path, 'processAll', 0, 'GroupSize', float(subset), 'splitPoints', 1, 'splitPercent', float(subset), 'Save', 1, 'SavePath', path)
 
             split_obj = point_obj['split_points']
 
