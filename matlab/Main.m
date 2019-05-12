@@ -11,7 +11,7 @@ p.addParameter('GroupSize', 'all');
 p.addParameter('processAll', false);
 %whether to run a splitpoints experiment
 p.addParameter('splitPoints',false);
-p.addParameter('splitPercent', []);
+p.addParameter('subsetSize', []);
 p.addParameter('Save', false);
 p.addParameter('SavePath', []);
 
@@ -35,24 +35,20 @@ if ~isfield(Points, 'Z')
     Points.Z = ones(1, length(Points.X));
 end
 
-
 %init processed points object
 obj = {};
 obj.all_points = Points;
 obj.inputParameters = p.Results;
 
-
 if obj.inputParameters.processAll
-    
     %build phase masks from all the points
     obj = AllPoints(obj);
-    
 end
 
 if obj.inputParameters.splitPoints
     
-    if isempty(obj.inputParameters.splitPercent)
-        error('need to provide percentage to keep if splitting points')
+    if isempty(obj.inputParameters.subsetSize)
+        error('need to provide subset sizes to keep if splitting points')
     end
     
     obj = splitPoints(obj);
@@ -63,9 +59,6 @@ end
 if ~isempty(obj.inputParameters.SavePath)
     save([obj.inputParameters.SavePath filesep 'matlab_input_parameters.mat'], 'obj');
 end
-
-
-
 
 
 
