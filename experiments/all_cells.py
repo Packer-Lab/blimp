@@ -8,11 +8,13 @@ from threading import Thread, active_count
 import tifffile
 import imageio
 import asyncio
+from utils.utils_funcs import load_mat_file
 import multiprocessing
+import matlab.engine
 from multiprocessing import Process
 from concurrent.futures import ProcessPoolExecutor
 import concurrent
-
+from distutils.dir_util import copy_tree
 from multiprocessing import Pool
 
 
@@ -20,11 +22,21 @@ class AllCells():
 
     def __init__(self, Blimp):
     
-    
         self.Blimp = Blimp
         
-        all_points = self.Blimp.all_points
-        
+        if self.Blimp.yaml_dict['redo_naparm']:
+            _points_obj = self.Blimp.eng.Main(self.Blimp.naparm_path, 'processAll', 1, 'GroupSize', self.Blimp.group_size, 'SavePath', self.Blimp.output_folder)
+            self.all_points = _points_obj['all_points']
+
+        else:
+            _points_path = next(os.path.join(self.Blimp.naparm_path,file) for file in os.listdir(self.Blimp.naparm_path) if file.endswith('_Points.mat'))
+            self.all_points = load_mat_file(_points_path)['points']
+            #copy the phase masks
+            copy_tree(os.path.join(self.Blimp.naparm_path, 'PhaseMasks'), os.path.join(self.Blimp.output_folder, 'PhaseMasks'))
+            #copy the whole naparm directory in case of future issues
+            copy_tree(self.Blimp.naparm_path, os.path.join(self.Blimp.output_folder, 'naparm'))
+
+ 
         # into foxy ratio format
         galvo_x = np.asarray(all_points['centroid_x']).squeeze() / 512
         galvo_y = np.asarray(all_points['centroid_y']).squeeze() / 512

@@ -37,7 +37,7 @@ experiment: Subsets
 #the number of permuatations for each subset for a subset experiment
 subset_perms: 1
 #list of the percents of cells to stim in a percent cells experiment
-subset_sizes: [5,10,20]
+subset_sizes: [5, 10, 20]
 
 
 ########################################################
@@ -47,4 +47,4 @@ subset_sizes: [5,10,20]
 # should be same as naparm setting
 FOVsize_UM_1x: 1118.5
 #path to save blimp outputs, updated automatically in startup_gui.py
-output_path: E:\Data\jrowland\2019-05-01\blimp
+output_path: E:\Data\sarmstrong\2019-05-13\blimp

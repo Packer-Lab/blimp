@@ -8,18 +8,15 @@ import sys
 import os
 from datetime import datetime
 import time
-import matlab.engine
 from pathlib import Path
 import experiments
-from distutils.dir_util import copy_tree
+import matlab.engine
 
 
 
 class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
 
     def __init__(self):
-
-        '''detailed description goes here'''
 
         # alows stopping and starting in the pycontrol gui
         if not hasattr(self, '_im_init'):
@@ -71,26 +68,6 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
                 print('close other SLM connections')
                 time.sleep(5)
                 raise
-
-            if self.yaml_dict['redo_naparm']:
-
-                #start the matlab engine
-                print('Initialising matlab engine')
-                self.eng = matlab.engine.start_matlab()
-                print('matlab engine initialised')
-
-                # get the points object for all target points
-                _points_obj = self.eng.Main(self.naparm_path, 'processAll', 1, 'GroupSize', self.group_size, 'SavePath', self.output_folder)
-                self.all_points = _points_obj['all_points']
-
-            else:
-                _points_path = next(os.path.join(self.naparm_path,file) for file in os.listdir(self.naparm_path) if file.endswith('_Points.mat'))
-                self.all_points = load_mat_file(_points_path)['points']
-                #copy the phase masks
-                copy_tree(os.path.join(self.naparm_path, 'PhaseMasks'), os.path.join(self.output_folder, 'PhaseMasks'))
-                #copy the whole naparm directory in case of future issues
-                copy_tree(self.naparm_path, os.path.join(self.output_folder, 'naparm'))
-
             # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
             self.SLM_tnums = []
             # the barcodes of the SLM trials
@@ -99,6 +76,11 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             self.SLM_times = []
 
             self._run_time_prev = 0
+
+            if self.yaml_dict['redo_naparm']:
+                print('starting matlab engine')
+                self.eng = matlab.engine.start_matlab()
+                print('matlab engine initialised')
 
             #get the experiment function defined in the yaml
             try:
@@ -165,6 +147,9 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
 
     def update_test(self):
         '''development function to test the update function called from pycontrol'''
+        self.trial_runtime = 1    
+        self.trial_number = 1
+        self.barcode = 1
         self.experiment.run_experiment()
 
     def write_output(self, time_stamp=None, trial_number=None, barcode=None, info=None):

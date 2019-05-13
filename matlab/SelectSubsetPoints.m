@@ -1,7 +1,7 @@
 function keep_idx = SelectSubsetPoints(obj)
 
 %%%%%%%% maximum number of pixels apart points can be %%%%%%%%%%%%%%%
-max_distance = 200;
+max_distance = 400;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 x_coords = obj.all_points.X;
@@ -56,7 +56,7 @@ while 1
     %do not include own point
     close_points = close_points(close_points ~= rand_point);
     
-    test_selection = datasample(close_points,10, 'Replace', false);
+    test_selection = datasample(close_points, subsetSize, 'Replace', false);
     
     %check that all points in the test_selection are within max_distance
     for i = 1:length(test_selection)
