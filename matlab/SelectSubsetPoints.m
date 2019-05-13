@@ -1,11 +1,16 @@
-clear
-tic
-x_coords = [193,306,245,228,295,329,183,278,241,175,218,241,282,345,326,276,309,334];
-y_coords = [133,131,199,281,276,242,165,173,207,226,243,236,193,196,245,286,276,282];
+function keep_idx = SelectSubsetPoints(obj)
+
+%%%%%%%% maximum number of pixels apart points can be %%%%%%%%%%%%%%%
+max_distance = 200;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+x_coords = obj.all_points.X;
+y_coords = obj.all_points.Y;
+subsetSize = obj.inputParameters.subsetSize;
+
 num_points = length(x_coords);
 
-merged = vertcat(x_coords,y_coords);
-distances = [];
+distances = zeros(num_points);
 for i = 1:num_points
     x_point = x_coords(i);
     y_point = y_coords(i);
@@ -21,8 +26,6 @@ for i = 1:num_points
     end
 end
 
-%maximum number of pixels apart points can be
-max_distance = 111;
 
 distant_idx = find(distances > max_distance);
 bool_mat = ones(size(distances));
@@ -30,22 +33,22 @@ bool_mat(distant_idx) = 0;
 
 summed = sum(bool_mat, 2);
 
-subsetSize = 10;
 
 %points that have more than subsetSize points close to them
 include_idx = find(summed > subsetSize);
 
+if isempty(include_idx)
+     error(strcat('could not find ', num2str(subsetSize), ' points within ', num2str(max_distance), ' pxiels'))
+end
 
-%%brute force solution%%
+
+%%brute force ish solution%%
 iter = 0;
-got_solution = 0;
 while 1
     too_far = 0;
-    count = 0;
     iter = iter +1;
     if iter > 1000
-        disp('couldnt find solution')
-        break
+        error(strcat('could not find ', num2str(subsetSize), ' points within ', num2str(max_distance), ' pxiels'))
     end
     
     rand_point = datasample(include_idx,1);
@@ -55,7 +58,7 @@ while 1
     
     test_selection = datasample(close_points,10, 'Replace', false);
     
-    
+    %check that all points in the test_selection are within max_distance
     for i = 1:length(test_selection)
         x = test_selection(i);
         
@@ -78,22 +81,30 @@ while 1
         continue
     else
         disp('got solution yo')
+        keep_idx = test_selection;
         break
     end
    
 end
-    
-    
-    toc
-    
-fig = zeros(512,512);
+ 
 
-for i = 1:length(test_selection)
-    point = test_selection(i);
-    fig(x_coords(point), y_coords(point)) = 1;
-end
-
-imwrite(fig,'result.tiff' )
+%%% useful debugging tool
+% fig1 = zeros(512,512);
+% fig2 = zeros(512,512);
+% 
+% for point = 1:length(x_coords)
+%     fig1(x_coords(point), y_coords(point)) = 1;
+% end
+% 
+% imwrite(fig1,'all_points.tiff')
+% 
+% 
+% for i = 1:length(keep_idx)
+%     point = keep_idx(i);
+%     fig2(x_coords(point), y_coords(point)) = 1;
+% end
+% 
+% imwrite(fig2,'split_result.tiff')
     
     
     
