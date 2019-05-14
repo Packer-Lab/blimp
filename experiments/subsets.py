@@ -14,29 +14,29 @@ class Subsets():
         experiment to run a random subset of cells, defined in the subset_sizes list
         currently only works with a single group of size subset_sizes[idx]
 
-        inherits an instance of the Blimp class
+        inherits an instance of the _blimp class
 
         '''
-        self.Blimp = Blimp
+        self._blimp = Blimp
 
-        self.save_path = os.path.join(Blimp.output_folder)
+        self.save_path = os.path.join(_blimp.output_folder)
 
-        self.subset_perms = self.Blimp.yaml_dict['subset_perms']
+        self.subset_perms = self._blimp.yaml_dict['subset_perms']
 
-        #subset size, duplicated by number of permuations 
-        self.subset_sizes = self.Blimp.yaml_dict['subset_sizes']
+        #subset size, duplicated by number of permuations
+        self.subset_sizes = self._blimp.yaml_dict['subset_sizes']
 
         # the path to each percent save file, will percentage (p) and subset iteration (s) in file name
         self.subset_paths = [os.path.join(self.save_path, str(p) + '_' + str(s))  for p in self.subset_sizes for s in range(self.subset_perms)]
 
-        self.markpoints_strings, self.tiffs = self.init_trials()
+        self.markpoints_strings, self.tiffs = self._init_trials()
 
         #makes iterating easier
         self.subset_sizes = self.subset_sizes * self.subset_perms
 
 
 
-    def init_trials(self):
+    def _init_trials(self):
 
         print('Building percent files')
 
@@ -44,21 +44,21 @@ class Subsets():
         tiffs = []
         for subset, path in zip(self.subset_sizes, self.subset_paths):
 
-            point_obj = self.Blimp.eng.Main(self.Blimp.naparm_path, 'processAll', 0, 'GroupSize', float(subset), 'splitPoints', 1, 'subsetSize', float(subset), 'Save', 1, 'SavePath', path)
+            _point_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 0, 'GroupSize', float(subset), 'splitPoints', 1, 'subsetSize', float(subset), 'Save', 1, 'SavePath', path)
 
-            split_obj = point_obj['split_points']
- 
+            _split_obj = _point_obj['split_points']
+
             # into foxy ratio format
-            galvo_x = np.asarray(split_obj['centroid_x']).squeeze() / 512
-            galvo_y = np.asarray(split_obj['centroid_y']).squeeze() / 512
+            galvo_x = np.asarray(_split_obj['centroid_x']).squeeze() / 512
+            galvo_y = np.asarray(_split_obj['centroid_y']).squeeze() / 512
 
             #the shape of the point array shows the group size
-            mW_power = subset * self.Blimp.mWperCell
-            pv_power = self.Blimp.mw2pv(mW_power)
+            mW_power = subset * self._blimp.mWperCell
+            pv_power = self._blimp.mw2pv(mW_power)
 
             # string for each group is nested in list for each percent
-            group_string = self.Blimp.build_strings(X = galvo_x, Y = galvo_y, duration = self.Blimp.duration, laser_power = pv_power, is_spiral = 'true',\
-            spiral_revolutions = self.Blimp.spiral_revolutions, spiral_size = self.Blimp.spiral_size, num_spirals = self.Blimp.num_spirals)
+            group_string = self._blimp.build_strings(X = galvo_x, Y = galvo_y, duration = self._blimp.duration, laser_power = pv_power, is_spiral = 'true',\
+            spiral_revolutions = self._blimp.spiral_revolutions, spiral_size = self._blimp.spiral_size, num_spirals = self._blimp.num_spirals)
 
             markpoints_strings.append(group_string)
 
@@ -73,7 +73,7 @@ class Subsets():
 
         print('Percent files built successfully')
 
-        return markpoints_strings, tiffs 
+        return markpoints_strings, tiffs
 
 
     def run_experiment(self):
@@ -91,27 +91,13 @@ class Subsets():
         print('Stimming {} cells'.format(subset_run))
 
         save_str = 'Subset cells experiment, stimulating {} cells. File path is {}'.format(subset_run, trial_path)
-        self.Blimp.write_output(self.Blimp.trial_runtime, self.Blimp.trial_number, self.Blimp.barcode, save_str)
+        self._blimp.write_output(self._blimp.trial_runtime, self._blimp.trial_number, self._blimp.barcode, save_str)
 
         ##the threaded function
-        slm_thread = Thread(target=self.Blimp.sdk.load_mask, args = [mask])
+        slm_thread = Thread(target=self._blimp.sdk.load_mask, args = [mask])
         slm_thread.start()
 
         time.sleep(0.01)
-        
-        # this function laods the 15ms trigger sequences to the hardware and begins the sequence 
-        self.mp_output = self.Blimp.prairie.pl.SendScriptCommands(trial_string)
-        
 
-
-
-
-
-
-
-
-
-
-
-
-
+        # this function laods the 15ms trigger sequences to the hardware and begins the sequence
+        self.mp_output = self._blimp.prairie.pl.SendScriptCommands(trial_string)
