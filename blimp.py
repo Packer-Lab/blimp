@@ -22,6 +22,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         # alows stopping and starting in the pycontrol gui
         if not hasattr(self, '_im_init'):
 
+<<<<<<< HEAD
             self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
             self.assign_from_yaml()
           
@@ -29,6 +30,20 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             self.sdk = SLMsdk()
             self.prairie = PrairieInterface()
             
+=======
+            self.assign_from_yaml()
+
+            self.time_now = datetime.now().strftime('%Y-%m-%d-%H%M%S')
+            self.output_folder = os.path.join(self._output_path, self.time_now)
+
+            if not os.path.exists(self.output_folder):
+                os.makedirs(self.output_folder)
+
+            # save the current settings yaml into the todays folder
+            with open(os.path.join(self.output_folder, '{}_blimp_settings.yaml'.format(self.time_now)), 'w+') as f:
+                _yaml.dump(self.yaml_dict, f)
+
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
             # connect to the SLM
             try:
                 self.sdk.SLM_connect()
@@ -36,10 +51,14 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
                 print('close other SLM connections')
                 time.sleep(5)
                 raise
+<<<<<<< HEAD
             
             print('starting matlab engine')
             self.eng = matlab.engine.start_matlab()
             print('matlab engine initialised')
+=======
+
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
             # the numbers of the SLM trials produced by pycontrol (error in task if not continous list of ints)
             self.SLM_tnums= []
             # the barcodes of the SLM trials
@@ -52,7 +71,11 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             try:
                 self.experiment_class = getattr(experiments, self.yaml_dict['experiment'])
             except:
+<<<<<<< HEAD
                 raise Exception('Could not find experiment defined  in yaml')
+=======
+                raise Exception('Could not find experiment defined in yaml')
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
             # inits the experiment class with and instance of the Blimp class (this is probably a horrible way of doing this)
             self.experiment = self.experiment_class(self)
 
@@ -64,13 +87,19 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             # dont init the class more than once
             self._im_init = True
 
+<<<<<<< HEAD
     @property
     def yaml_dict(self):
+=======
+     @property
+     def yaml_dict(self):
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
         #load yaml
         _base_path = os.path.dirname(__file__)
         _yaml_path = os.path.join(_base_path, "blimp_settings.yaml")
 
         #the ruamel module preserves the comments and order of the yaml file
+<<<<<<< HEAD
         self._yaml = ruamel.yaml.YAML()
         
         with open(_yaml_path, 'r') as stream:
@@ -79,6 +108,32 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
     def assign_from_yaml(self):
     
         '''get attrs and paths from te blimp_settings.yaml file'''
+=======
+        _yaml = ruamel.yaml.YAML()
+        with open(_yaml_path, 'r') as stream:
+            return _yaml.load(stream)
+
+    @property
+    def eng(self):
+        print('starting matlab engine')
+        eng = matlab.engine.start_matlab()
+        print('matlab engine initialised')
+        return eng
+
+    @property
+    def sdk(self):
+        return(SLMsdk())
+
+    @property
+    def prairie(self):
+        return(PrairieInterface())
+
+    @property
+    def mp_parser(self):
+        return(ParseMarkpoints())
+
+    def assign_from_yaml(self):
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
         self.group_size = self.yaml_dict['group_size']
         self.duration = self.yaml_dict['duration']
         self.num_spirals = self.yaml_dict['num_spirals']
@@ -90,6 +145,7 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         self.spiral_size = self.yaml_dict['spiral_size'] / (self.yaml_dict['FOVsize_UM_1x'] / self.yaml_dict['zoom'])
         self.naparm_path = self.yaml_dict['naparm_path']
         self._output_path = self.yaml_dict['output_path']
+<<<<<<< HEAD
         
         self.output_folder = os.path.join(self._output_path, self.time_now)
         if not os.path.exists(self.output_folder):
@@ -99,6 +155,8 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
         with open(os.path.join(self.output_folder, '{}_blimp_settings.yaml'.format(self.time_now)), 'w+') as f:
             self._yaml.dump(self.yaml_dict, f)
 
+=======
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
 
     def mw2pv(self, x):
         '''returns the PV value required for specific PV value based on DigitalPowerMeasurments notebook fitting'''
@@ -147,12 +205,15 @@ class Blimp(SLMsdk, PrairieInterface, ParseMarkpoints):
             self.trial_runtime = round(_run_time,4) # dont need more than ms precision
             _space_split = _pycontrol_print.split(' ')
 
+<<<<<<< HEAD
             self.trial_number = [_space_split[i+1] for i,word in enumerate(_space_split) if word == 'Number'][0]
             self.barcode = [_space_split[i+1] for i,word in enumerate(_space_split) if word == 'Barcode'][0]
 
             self.experiment.nogo_trial()
             
 
+=======
+>>>>>>> 38f2d2b137f00a4ec551ecd4d95ad206d385c8fd
     def update_test(self):
         '''development function to test the update function called from pycontrol'''
         self.trial_runtime = 1
