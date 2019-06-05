@@ -47,7 +47,7 @@ load(transform_file);
 
 
 transformChoice = 'Yes';
-weightMe = 'Yes';
+
 
 
 
@@ -70,8 +70,21 @@ if exist('tif_file', 'var')
     
 end
 
-% foxy takes care of this 
+% foxy takes care of this
 FOVsize_OpticalZoom = 1;
+
+
+
+x_offset =  yaml.TForm_X_offset;
+y_offset =  yaml.TForm_Y_offset;
+
+%add the offset from the yaml
+for i = 1:length(Points)
+    P = Points{i};
+    P(:,1) = P(:,1) + x_offset;
+    P(:,2) = P(:,2) + y_offset;
+    Points{i} = P;
+end
 
 TransformedSLMTargets = {};
 PhaseMasks = {};
@@ -128,33 +141,33 @@ for idx = 1:NumGroups
     end
     
     % Weight the target pixel intensity by distance from zero order
-%     slope                = 75/183;
-%     b                    = 25;
-%     DistFromZeroOrderIdx = 1:0.1:183;
-%     WeightByDist         = slope*DistFromZeroOrderIdx + b;
-%     WeightByDist         = WeightByDist/100;
-%     for i = 1:length(u)
-%         d(i) = sqrt((u(i)-256)^2 + (v(i)-256)^2);
-%     end
-%     for i = 1:length(u)
-%         ThisDistIdx = find(d(i)<DistFromZeroOrderIdx,1,'first');
-%         ThisDistIdx(d(i)>max(DistFromZeroOrderIdx)) = length(DistFromZeroOrderIdx); %added 20141129
-%         p(i) = 255*WeightByDist(ThisDistIdx);
-%     end
-%     
-%    Build final transformed, weighted targets image
-%     
-%     if strcmp(weightMe, 'Yes')
-%         SLMtargets = uint8(zeros(512,512));
-%         for i = 1:length(u)
-%             SLMtargets(v(i),u(i)) = p(i);
-%         end
-%     end
-
-  
+    %     slope                = 75/183;
+    %     b                    = 25;
+    %     DistFromZeroOrderIdx = 1:0.1:183;
+    %     WeightByDist         = slope*DistFromZeroOrderIdx + b;
+    %     WeightByDist         = WeightByDist/100;
+    %     for i = 1:length(u)
+    %         d(i) = sqrt((u(i)-256)^2 + (v(i)-256)^2);
+    %     end
+    %     for i = 1:length(u)
+    %         ThisDistIdx = find(d(i)<DistFromZeroOrderIdx,1,'first');
+    %         ThisDistIdx(d(i)>max(DistFromZeroOrderIdx)) = length(DistFromZeroOrderIdx); %added 20141129
+    %         p(i) = 255*WeightByDist(ThisDistIdx);
+    %     end
+    %
+    %    Build final transformed, weighted targets image
+    %
+    %     if strcmp(weightMe, 'Yes')
+    %         SLMtargets = uint8(zeros(512,512));
+    %         for i = 1:length(u)
+    %             SLMtargets(v(i),u(i)) = p(i);
+    %         end
+    %     end
+    
+    
     if AutoAdjustWeights
         distances = pairwiseDistance([u v], [256 256]);
-        
+        disp('yes im waiting')
         % fudge weights steepness (slope of fit)
         W.p_edited = W.p;
         W.p_edited(1) = W.p_edited(1) * SteepnessFudgeFactor;
@@ -179,14 +192,14 @@ for idx = 1:NumGroups
         val_orig = val;
         val = I_weighted;
     end
-
+    
     
     if save_files
         weighted_dir = [saveDirectory filesep 'PhaseMasks' filesep 'TransformedTargets' filesep];
         if  ~exist(weighted_dir, 'dir')
             mkdir(weighted_dir)
         end
-    
+        
         imwrite(SLMtargets, [weighted_dir group_str 'TransformedWeighted.tif']);
     end
     
@@ -223,8 +236,8 @@ for idx = 1:NumGroups
     % Convert
     Phase8      = PhaseZeroed*(255/max(max(PhaseZeroed)));
     phaseMask8  = uint8(Phase8);
-%     Phase16     = PhaseZeroed*(65535/max(max(PhaseZeroed)));
-%     phaseMask16 = uint16(Phase16);
+    %     Phase16     = PhaseZeroed*(65535/max(max(PhaseZeroed)));
+    %     phaseMask16 = uint16(Phase16);
     PhaseMasks{idx} = phaseMask8;
     % Save
     if save_files

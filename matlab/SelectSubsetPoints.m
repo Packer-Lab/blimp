@@ -1,9 +1,9 @@
 function keep_idx = SelectSubsetPoints(obj)
 
 %%%%%%%% maximum number of pixels apart points can be %%%%%%%%%%%%%%%
-max_distance = 400;
+max_distance = 350;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+rng('shuffle')
 x_coords = obj.all_points.X;
 y_coords = obj.all_points.Y;
 subsetSize = obj.inputParameters.subsetSize;
@@ -47,7 +47,7 @@ iter = 0;
 while 1
     too_far = 0;
     iter = iter +1;
-    if iter > 1000
+    if iter > 10000
         error(strcat('could not find ', num2str(subsetSize), ' points within ', num2str(max_distance), ' pxiels'))
     end
     

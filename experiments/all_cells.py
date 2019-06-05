@@ -38,8 +38,8 @@ class AllCells():
 
 
         # into foxy ratio format
-        galvo_x = np.asarray(all_points['centroid_x']).squeeze() / 512
-        galvo_y = np.asarray(all_points['centroid_y']).squeeze() / 512
+        galvo_x = np.asarray(self.all_points['centroid_x']).squeeze() / 512
+        galvo_y = np.asarray(self.all_points['centroid_y']).squeeze() / 512
 
         assert len(galvo_x) == len(galvo_y)
 
@@ -47,19 +47,17 @@ class AllCells():
 
         group_list = []
 
+        mW_power = self._blimp.group_size * self._blimp.mWperCell
+        print('group size is {}'.format(self._blimp.group_size))
+        print('mw power is {}'.format(mW_power))
+
+        pv_power = self._blimp.mw2pv(mW_power)
+        print('PV power is {}'.format(pv_power))
+        
+        
+        
+
         for group in range(num_groups):
-
-            #the shape of the point array shows the group size
-            group_size = np.asarray(all_points['points_array'][group]).shape[0]
-
-            mW_power = group_size * self._blimp.mWperCell
-            print('group size is {}'.format(group_size))
-            print('mw per cells is {}'.format(self._blimp.mWperCell))
-
-            pv_power = self._blimp.eng.mw2pv(mW_power)
-            #print('PV power is {}'.format(pv_power))
-
-
             # string for each group is nested in list for each percent
             group_string = self._blimp.build_strings (X = galvo_x[group], Y = galvo_y[group], \
                                                     duration = self._blimp.duration, laser_power = pv_power, \
@@ -80,27 +78,35 @@ class AllCells():
         print('{} Phase mask tiffs found'.format(len(tiff_list)))
 
         #arrays of precaculated frame locations in memory
-        self.repeat_arrays = self._blimp.precalculate_masks(self.mask_list, num_repeats=self._blimp.num_repeats)
+        self.repeat_arrays = self._blimp.sdk.precalculate_masks(self.mask_list, num_repeats=self._blimp.num_repeats)
 
 
-    def run_experiment(self):
+    def slm_trial(self):
 
         ##the threaded function
-        slm_thread = Thread(target=self._blimp.load_precalculated_triggered, args = [self.repeat_arrays])
+        slm_thread = Thread(target=self._blimp.sdk.load_precalculated_triggered, args = [self.repeat_arrays])
         slm_thread.start()
 
 
         time.sleep(0.01)
 
         # this function laods the 15ms trigger sequences to the hardware and begins the sequence
-        self.mp_output = self._blimp.pl.SendScriptCommands(self.all_groups_mp)
+        self.mp_output = self._blimp.prairie.pl.SendScriptCommands(self.all_groups_mp)
         self._blimp.write_output(self._blimp.trial_runtime, self._blimp.trial_number, self._blimp.barcode, 'all_cells_stimulated')
 
 
+    def nogo_trial(self):
+            ''' called when an nogo  trial is initiated '''
+            # #change the uncaging power in the string to 0
+            _space_split = self.all_groups_mp.split(' ')
+            power_idx= [idx+1 for idx, el in enumerate(_space_split) if el == 'Uncaging']
 
+            for idx in power_idx:
+                _space_split[idx] = '0'
+            
+            _nogo_trial_string = (' ').join(_space_split)
 
+            self._blimp.write_output(self._blimp.trial_runtime, self._blimp.trial_number, self._blimp.barcode, 'all_cells_nogo')
 
-
-def unwrap_self_f(arg, **kwarg):
-
-    return AllCells._blimp.load_precalculated_triggered(*arg, **kwarg)
+            # this function laods the 15ms trigger sequences to the hardware and begins the sequence
+            self.mp_output = self._blimp.prairie.pl.SendScriptCommands(_nogo_trial_string)

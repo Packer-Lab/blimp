@@ -19,7 +19,7 @@ class Subsets():
         '''
         self._blimp = Blimp
 
-        self.save_path = os.path.join(_blimp.output_folder)
+        self.save_path = os.path.join(self._blimp.output_folder)
 
         self.subset_perms = self._blimp.yaml_dict['subset_perms']
 
@@ -43,8 +43,20 @@ class Subsets():
         markpoints_strings = []
         tiffs = []
         for subset, path in zip(self.subset_sizes, self.subset_paths):
+            #try 10 times to chose a subset that can position galvos
+            for attempt in range(10):
+                try:
+                    _point_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 0, 'GroupSize', float(subset), 'splitPoints', 1, 'subsetSize', float(subset), 'Save', 1, 'SavePath', path)
+                    break
+                except:
+                    if attempt == 9:
+                        print('could not build points obejct after 10 attempt')
+                        time.sleep(10)
+                        raise ValueError
+                    else:
+                        print('matlab engine failed to build point object, trying again')
+                        continue
 
-            _point_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 0, 'GroupSize', float(subset), 'splitPoints', 1, 'subsetSize', float(subset), 'Save', 1, 'SavePath', path)
 
             _split_obj = _point_obj['split_points']
 
@@ -55,6 +67,11 @@ class Subsets():
             #the shape of the point array shows the group size
             mW_power = subset * self._blimp.mWperCell
             pv_power = self._blimp.mw2pv(mW_power)
+
+            if pv_power > 1000:
+                print('PV power is > 1000!!')
+                time.sleep(5)
+                raise ValueError
 
             # string for each group is nested in list for each percent
             group_string = self._blimp.build_strings(X = galvo_x, Y = galvo_y, duration = self._blimp.duration, laser_power = pv_power, is_spiral = 'true',\
@@ -71,15 +88,13 @@ class Subsets():
 
         assert len(markpoints_strings) == len(self.subset_sizes) == len(tiffs)
 
-        print('Percent files built successfully')
+        print('Subset files built successfully')
 
         return markpoints_strings, tiffs
 
 
-    def run_experiment(self):
-
+    def slm_trial(self):
         ''' called when an SLM trial is initiated '''
-
         #randomly choose a percent to run
         rand_idx = random.randrange(len(self.subset_sizes))
 
@@ -90,14 +105,50 @@ class Subsets():
 
         print('Stimming {} cells'.format(subset_run))
 
-        save_str = 'Subset cells experiment, stimulating {} cells. File path is {}'.format(subset_run, trial_path)
+        save_str = 'Subset cells experiment, Go trial, stimulating {} cells. File path is {}'.format(subset_run, trial_path)
         self._blimp.write_output(self._blimp.trial_runtime, self._blimp.trial_number, self._blimp.barcode, save_str)
 
-        ##the threaded function
-        slm_thread = Thread(target=self._blimp.sdk.load_mask, args = [mask])
-        slm_thread.start()
-
-        time.sleep(0.01)
+        self._blimp.sdk.load_mask(mask)
 
         # this function laods the 15ms trigger sequences to the hardware and begins the sequence
         self.mp_output = self._blimp.prairie.pl.SendScriptCommands(trial_string)
+
+
+    def nogo_trial(self):
+        ''' called when an SLM trial is initiated '''
+        #randomly choose a percent to run
+        rand_idx = random.randrange(len(self.subset_sizes))
+
+        subset_run = self.subset_sizes[rand_idx]
+        trial_path = self.subset_paths[rand_idx]
+        trial_string = self.markpoints_strings[rand_idx]
+        mask = self.tiffs[rand_idx]
+
+        #change the uncaging power in the string to 0
+        _space_split = trial_string.split(' ')
+        power_idx= [idx+1 for idx, el in enumerate(_space_split) if el == 'Uncaging']
+
+        for idx in power_idx:
+            _space_split[idx] = '0'
+        
+        trial_string = (' ').join(_space_split)
+
+        print('Nogo {} cells'.format(subset_run))
+
+        save_str = 'Subset cells experiment, Nogo Trial, {} cells. File path is {}'.format(subset_run, trial_path)
+        self._blimp.write_output(self._blimp.trial_runtime, self._blimp.trial_number, self._blimp.barcode, save_str)
+
+        ##the threaded function
+        self._blimp.sdk.load_mask(mask)
+
+        # this function laods the 15ms trigger sequences to the hardware and begins the sequence
+        self.mp_output = self._blimp.prairie.pl.SendScriptCommands(trial_string)
+
+
+
+
+
+
+
+
+

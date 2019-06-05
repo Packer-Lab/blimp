@@ -38,4 +38,5 @@ def get_hdf5group_keys(dat):
 
 def tangent(x, phi, I_0, I, k):
     '''takes *popt from power measurements and returns inverse of matthias arctan func'''
+    x = x/1000
     return (np.tan((x - I_0) / I) / k) - phi
