@@ -53,18 +53,19 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         self.mask_list = self.convert_tiffs(self.tiff_list)
         self.num_groups = len(self.mask_list)
         self.stim_timings()
-        #try:
-        self.sdk = SLMsdk()
-        self.sdk.SLM_connect()
-        
-        mask_pointers = self.sdk.precalculate_masks(self.mask_list, num_repeats=self.n_repeats)
-        
-        slm_thread = Thread(target=self.sdk.load_precalculated_triggered, args = [mask_pointers])
-        slm_thread.start()
-        # except:
-            # print(colored('I COULD NOT CONNECT TO THE SLM CLOSE BLINK / OTHER AUTONAPARMS I WILL TRY AGAIN IN 5 SECONDS','yellow','on_red', attrs=['reverse', 'blink']))
-            # time.sleep(5)
-            # AutoNaparm2(self.naparm_path)
+        try:
+            self.sdk = SLMsdk()
+            self.sdk.SLM_connect()
+            
+            mask_pointers = self.sdk.precalculate_masks(self.mask_list, num_repeats=self.n_repeats)
+            
+            slm_thread = Thread(target=self.sdk.load_precalculated_triggered, args = [mask_pointers])
+            slm_thread.start()
+        except:
+            print(colored('I COULD NOT CONNECT TO THE SLM CLOSE BLINK / OTHER AUTONAPARMS I WILL TRY AGAIN IN 3 SECONDS','yellow','on_red', attrs=['reverse', 'blink']))
+            time.sleep(3)
+            raise
+            
 
 
         self.new_xml()
@@ -99,13 +100,11 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         
     def stim_timings(self):
         
-        pv_arr = np.fromfile(self.to_pv, dtype=float)
         slm_arr = np.fromfile(self.to_slm, dtype=float)
 
         self.total_time = len(slm_arr) / self.naparm_rate
         
         slm_times = threshold_detect(slm_arr, 1)
-        pv_times = threshold_detect(pv_arr, 1)
         
         self.n_repeats = len(slm_times) / self.num_groups
         
@@ -113,6 +112,7 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         self.n_repeats = int(self.n_repeats)
         
         slm_diff = np.diff(slm_times)
+        print(len(slm_arr))
         
         # time difference between groups on each trial
         self.inter_group_intervals = slm_diff[0:self.num_groups-1]
@@ -128,8 +128,6 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
         markpoint_elems = root.findall('PVMarkPointElement')
         
         for i,point in enumerate(markpoint_elems):
-
-
             
             # mutate xml elems so no external trigger required    
             point.attrib['TriggerFrequency'] = 'Never'
@@ -184,12 +182,8 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
             
          
         root.insert(1, slm_trigger_1)
-            
-                
-                    
+        
         self.autoxml_path = self.xml_path[:-4] + '_AutoNaparmXML.xml'        
-        
-        
         tree.write(self.autoxml_path)
         
         self.pl.SendScriptCommands('-LoadMarkPoints {}'.format(self.autoxml_path))
@@ -203,12 +197,6 @@ class AutoNaparm2(ParseMarkpoints, PrairieInterface):
     def disconnect(self):
         self.sdk.SLM_disconnect()
         
-
-        
-        
-
- 
-
         
 def startup_animation(screen):
     scenes = []
@@ -241,7 +229,7 @@ def query_yes_no(question, default="yes"):
 
     The "answer" return value is True for "yes" or False for "no".
     """
-    valid = {"yes": True, "y": True, "ye": True,
+    valid = {"yes": True, "y": True, "ye": True, "yeet": True, "hell yeah": True, "fuck yeah": True,
              "no": False, "n": False}
     if default is None:
         prompt = " [y/n] "
@@ -263,8 +251,6 @@ def query_yes_no(question, default="yes"):
             sys.stdout.write("Please respond with 'yes' or 'no' "
                              "(or 'y' or 'n').\n")
             
-            
-            
         
 if __name__ == '__main__':
 
@@ -281,21 +267,27 @@ if __name__ == '__main__':
     path_found = False
     
     while not path_found:
-        naparm_path = os.path.normpath(input())
+        naparm_path = input()
+        naparm_path = naparm_path.replace('"', '')
+        naparm_path = os.path.normpath(naparm_path)
         if not os.path.exists(naparm_path):
-            print('file directory not found')
+            print('file directory not found please enter again')
         else:
             print(colored('File path found', 'yellow'))
             path_found = True
             
     #initialise auto naparm
-    an = AutoNaparm2(naparm_path= naparm_path)
-    
+    try:
+        an = AutoNaparm2(naparm_path= naparm_path)
+    except:
+        print('got an error')
+        an = AutoNaparm2(naparm_path= naparm_path)
+
     #t_series = query_yes_no('Do you want to image during this Naparm? SORRY THIS IS CURRENTLY NOT IMPLEMENTED DO IT MANUALLY')
     #take me out at some point
     t_series = False
     print(colored('This Naparm will take {} seconds, if you want to image please update PV t-series settings'.format(an.total_time), 'yellow'))
-    print(colored('DONT FORGET TO RECORD A PAQ!!!'.format(an.total_time), 'yellow'))
+    print(colored('DONT FORGET TO RECORD A PAQ!!!', 'red'))
     
     if t_series:
         print(colored('OK, initialising matlab engine for read raw data stream', 'yellow'))
@@ -313,22 +305,11 @@ if __name__ == '__main__':
             # eng.PrairieLink_RawDataStream(nargout=0)
         
         an.fire()
-        
-        #time.sleep(an.total_time + 1)
             
-
     else:
         print(colored('OK try again', 'red'))
         time.sleep(2)
-
-        #an.disconnect()
-        
-        #clear()
-        
-        #if ready:
-        #    print(colored('*************Naparm complete********************', 'red'))
-                        
-                        
+ 
                     
                     
                     

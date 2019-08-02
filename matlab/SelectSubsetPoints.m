@@ -1,8 +1,17 @@
 function keep_idx = SelectSubsetPoints(obj)
 
-%%%%%%%% maximum number of pixels apart points can be %%%%%%%%%%%%%%%
+%%%%%%%% maximum number of pixels apart points can be (2x 512)%%%%%%%%%%%%%%%
 max_distance = 350;
+disp(['You have inputted a max distance for SelectSubsetPoints of ' num2str(max_distance)])
+%read in stored imaging information from naparm 
+zoom = obj.zoom;
+%only need to rescale by zoom as resoluition is already downsampled
+max_distance = max_distance / (2 / zoom);
+
+disp(['This has been rescaled based on the zoom and resolution to ' num2str(max_distance)]) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 rng('shuffle')
 x_coords = obj.all_points.X;
 y_coords = obj.all_points.Y;
@@ -38,7 +47,8 @@ summed = sum(bool_mat, 2);
 include_idx = find(summed > subsetSize);
 
 if isempty(include_idx)
-     error(strcat('could not find ', num2str(subsetSize), ' points within ', num2str(max_distance), ' pxiels'))
+     %error(strcat('could not find ', num2str(subsetSize), ' points within ', num2str(max_distance), ' pxiels'))
+     error('errr')
 end
 
 
@@ -56,7 +66,7 @@ while 1
     %do not include own point
     close_points = close_points(close_points ~= rand_point);
     
-    test_selection = datasample(close_points, subsetSize, 'Replace', false);
+    test_selection = datasample(close_points, subsetSize-1, 'Replace', false);
     
     %check that all points in the test_selection are within max_distance
     for i = 1:length(test_selection)
@@ -81,7 +91,7 @@ while 1
         continue
     else
         disp('got solution yo')
-        keep_idx = test_selection;
+        keep_idx = [test_selection rand_point];
         break
     end
    

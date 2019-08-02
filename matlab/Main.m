@@ -30,6 +30,15 @@ naparm_points = naparm.points;
 
 Points.X = naparm_points.X;
 Points.Y = naparm_points.Y;
+
+%rescale to 512x512 for compatibility with existing functions
+scaling_factor = naparm_points.fovsize_px / 512;
+Points.X = round(Points.X / scaling_factor);
+Points.Y = round(Points.Y / scaling_factor);
+
+
+
+
 %add plane information to structures from naparm2
 if ~isfield(Points, 'Z')
     Points.Z = ones(1, length(Points.X));
@@ -39,6 +48,8 @@ end
 obj = {};
 obj.all_points = Points;
 obj.inputParameters = p.Results;
+obj.fovsize_px = naparm_points.fovsize_px;
+obj.zoom = naparm_points.zoom;
 
 if obj.inputParameters.processAll
     %build phase masks from all the points

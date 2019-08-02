@@ -26,7 +26,7 @@ end
 %MAKE THIS READ THE YML
 % Load previously calibrated transform
 % improve on this hardcoded path when switch to naparm3
-disp('using JR phase mask maker with hardcoded naparm 2 yaml path')
+disp('using blimp phase mask maker with hardcoded naparm 2 yaml path')
 yaml = ReadYaml("C:\Users\User\Documents\Code\Naparm2\Settings\settings.yml");
 
 
@@ -71,10 +71,25 @@ if exist('tif_file', 'var')
 end
 
 % foxy takes care of this
-FOVsize_OpticalZoom = 1;
-
-
-
+% FOVsize_OpticalZoom = 0.83;
+FOVsize_OpticalZoom = yaml.FOVsize_OpticalZoom;
+%RL 2018-11-15 for scaling targets according to optical zoom
+% keyboard
+for i = 1:length(Points)
+    for j = 1:size(Points{i},1)
+        for k = 1:2
+            a = Points{i}(j,k); %SLM target position
+            b = abs(255-a); %Distance between SLM target and galvo
+            c = (b*2)/FOVsize_OpticalZoom; %scale the distance from a 2x zoom transform
+            if Points{i}(j,k) < 255
+                Points{i}(j,k) = 255-c;
+            else
+                Points{i}(j,k) = 255+c;
+            end
+        end
+    end
+end
+% keyboard
 x_offset =  yaml.TForm_X_offset;
 y_offset =  yaml.TForm_Y_offset;
 
@@ -103,7 +118,9 @@ for idx = 1:NumGroups
         col = round(Points{idx}(i,1));
         slice = round(Points{idx}(i,3) - min(Points{idx}(:,3)) + 1);
         val = Points{idx}(i,4);
+
         InputTargets(row,col,slice) = val;
+            
     end
     
     FocalSlice = -min(Points{idx}(:,3)) + 1;
@@ -167,7 +184,6 @@ for idx = 1:NumGroups
     
     if AutoAdjustWeights
         distances = pairwiseDistance([u v], [256 256]);
-        disp('yes im waiting')
         % fudge weights steepness (slope of fit)
         W.p_edited = W.p;
         W.p_edited(1) = W.p_edited(1) * SteepnessFudgeFactor;

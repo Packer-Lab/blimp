@@ -4,17 +4,17 @@ import os
 import time
 import random
 import numpy as np
+import tifffile
 from threading import Thread
+from utils.utils_funcs import load_mat_file
+from distutils.dir_util import copy_tree
 
-class Subsets():
+class EasyTest():
 
     def __init__(self, Blimp):
 
         '''
-        experiment to run a random subset of cells, defined in the subset_sizes list
-        currently only works with a single group of size subset_sizes[idx]
-
-        inherits an instance of the _blimp class
+        experiment to stimulate as large set of cells on half of go trials and a small set of cells on nogo trials 
 
         '''
         self._blimp = Blimp
@@ -27,11 +27,7 @@ class Subsets():
         self.subset_sizes = self._blimp.yaml_dict['subset_sizes']
         # list to randomly choose subset size from
         self.subset_choose = self._blimp.yaml_dict['subset_sizes']      
-        # how many more times to stim with the biggest subset value
-        subset_weight = self._blimp.yaml_dict['subset_weight']
-        for _ in range(subset_weight-1):
-            self.subset_choose.insert(0, max(self.subset_choose))
-        # self.subset_idxs = list(range(len(self.subset_sizes)))
+
             
         # the path to each percent save file, will percentage (p) and subset iteration (s) in file name
         # order of nested lists is important here
@@ -40,9 +36,12 @@ class Subsets():
          # makes iterating easier
         self.subset_sizes = self.subset_sizes * self.subset_perms
         
-        self.markpoints_strings, self.tiffs = self._init_trials()
+        self.subsets_markpoints_strings, self.subsets_tiffs = self._init_subsets()
 
-    def _init_trials(self):
+        self.all_groups_mp, self.repeat_arrays = self._init_easy()
+
+
+    def _init_subsets(self):
 
         print('Building percent files')
 
@@ -51,12 +50,16 @@ class Subsets():
         for subset, path in zip(self.subset_sizes, self.subset_paths):
             #try 10 times to chose a subset that can position galvos
             for attempt in range(50):
+
                 try:
-                    _point_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 0, 'GroupSize', float(subset), 'splitPoints', 1, 'subsetSize', float(subset), 'Save', 1, 'SavePath', path)
+                    _point_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 0, 'GroupSize', 
+                                                      float(subset), 'splitPoints', 1, 'subsetSize', float(subset), 
+                                                      'Save', 1, 'SavePath', path)
                     break
-                except:
-                    if attempt == 9:
+                except Exception as e:
+                    if attempt == 49:
                         print('could not build points obejct after 50 attempts')
+                        print(e)
                         time.sleep(10)
                         raise ValueError
                     else:
@@ -81,8 +84,10 @@ class Subsets():
                 raise ValueError
 
             # string for each group is nested in list for each percent
-            group_string = self._blimp.build_strings(X = galvo_x, Y = galvo_y, duration = self._blimp.duration, laser_power = pv_power, is_spiral = 'true',\
-            spiral_revolutions = self._blimp.spiral_revolutions, spiral_size = self._blimp.spiral_size, num_spirals = self._blimp.num_spirals)
+            group_string = self._blimp.build_strings(X = galvo_x, Y = galvo_y, duration = self._blimp.duration, 
+                                                    laser_power = pv_power, is_spiral = 'true',
+                                                    spiral_revolutions = self._blimp.spiral_revolutions, 
+                                                    spiral_size = self._blimp.spiral_size, num_spirals = self._blimp.num_spirals)
 
             markpoints_strings.append(group_string)
 
@@ -99,17 +104,91 @@ class Subsets():
 
         return markpoints_strings, tiffs
 
+    def _init_easy(self):
+
+        _points_path = next(os.path.join(self._blimp.naparm_path,file) for file in os.listdir(self._blimp.naparm_path) 
+                                             if file.endswith('_Points.mat'))
+
+        self.all_points = load_mat_file(_points_path)['points']
+        #copy the phase masks
+        copy_tree(os.path.join(self._blimp.naparm_path, 'PhaseMasks'), os.path.join(self._blimp.output_folder, 'PhaseMasks'))
+        #copy the whole naparm directory in case of future issues
+        copy_tree(self._blimp.naparm_path, os.path.join(self._blimp.output_folder, 'naparm'))
+
+        # into foxy ratio format
+        galvo_x = np.asarray(self.all_points['centroid_x']).squeeze() / 512
+        galvo_y = np.asarray(self.all_points['centroid_y']).squeeze() / 512
+
+        assert len(galvo_x) == len(galvo_y)
+
+        mW_power = self._blimp.group_size * self._blimp.mWperCell
+        print('group size is {}'.format(self._blimp.group_size))
+        print('mw power is {}'.format(mW_power))
+
+        pv_power = self._blimp.mw2pv(mW_power)
+        print('PV power is {}'.format(pv_power))
+
+        num_groups = len(galvo_x)
+        group_list = []
+
+        for group in range(num_groups):
+            # string for each group is nested in list for each percent
+            group_string = self._blimp.build_strings (X = galvo_x[group], Y = galvo_y[group], \
+                                                    duration = self._blimp.duration, laser_power = pv_power, \
+                                                    is_spiral = 'true', spiral_revolutions = self._blimp.spiral_revolutions, \
+                                                    spiral_size = self._blimp.spiral_size, num_spirals = self._blimp.num_spirals)
+            group_list.append(group_string)
+
+        #merge each group into a single string
+        all_groups_mp = self._blimp.groups_strings(self._blimp.inter_group_interval, group_list, SLM_trigger = True,
+                                                        n_repeats=self._blimp.num_repeats)
+
+        #init numpy arrays from tiffs
+        mask_path = os.path.join(self._blimp.output_folder, 'PhaseMasks')
+        tiff_list = [os.path.join(mask_path,file) for file in os.listdir(mask_path) if file.endswith('.tiff') or file.endswith('.tif')]
+        mask_list = [tifffile.imread(tiff) for tiff in tiff_list]
+
+        print('{} Phase mask tiffs found'.format(len(tiff_list)))
+
+        #arrays of precaculated frame locations in memory
+        repeat_arrays = self._blimp.sdk.precalculate_masks(mask_list, num_repeats=self._blimp.num_repeats)
+
+        print('Easy group built')
+        return all_groups_mp, repeat_arrays
+
 
     def slm_trial(self):
         ''' called when an SLM trial is initiated '''
-        #randomly choose a percent to run
-        
+        if 'easy' in self._blimp.slm_print:
+            self.easy_trial()
+        elif ' test' in self._blimp.slm_print:
+            self.test_trial()
+        else:
+            raise ValueError
+
+    def easy_trial(self):
+        print('easy trial')
+        # the threaded function
+        slm_thread = Thread(target=self._blimp.sdk.load_precalculated_triggered, args = [self.repeat_arrays])
+        slm_thread.start()
+        time.sleep(0.01)
+        # this function laods the 15ms trigger sequences to the hardware and begins the sequence
+        self.mp_output = self._blimp.prairie.pl.SendScriptCommands(self.all_groups_mp)
+        self._blimp.write_output(self._blimp.trial_runtime, self._blimp.trial_number, self._blimp.barcode, 'all_cells_stimulated')
+
+
+
+
+    def test_trial(self):
+
+        # randomly choose a percent to run  
+        print('test trial')
         trial_subset = random.choice(self.subset_choose)
         rand_idx = random.choice(np.where(np.array(self.subset_sizes)==trial_subset)[0])
         subset_run = self.subset_sizes[rand_idx]
         trial_path = self.subset_paths[rand_idx]
-        trial_string = self.markpoints_strings[rand_idx]
-        mask = self.tiffs[rand_idx]
+        trial_string = self.subsets_markpoints_strings[rand_idx]
+        mask = self.subsets_tiffs[rand_idx]
 
         print('Stimming {} cells'.format(subset_run))
 
@@ -130,8 +209,8 @@ class Subsets():
         rand_idx = random.choice(np.where(np.array(self.subset_sizes)==trial_subset)[0])
         subset_run = self.subset_sizes[rand_idx]
         trial_path = self.subset_paths[rand_idx]
-        trial_string = self.markpoints_strings[rand_idx]
-        mask = self.tiffs[rand_idx]
+        trial_string = self.subsets_markpoints_strings[rand_idx]
+        mask = self.subsets_tiffs[rand_idx]
 
         #change the uncaging power in the string to 0
         _space_split = trial_string.split(' ')

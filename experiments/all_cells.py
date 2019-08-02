@@ -25,11 +25,14 @@ class AllCells():
         self._blimp = Blimp
 
         if self._blimp.yaml_dict['redo_naparm']:
-            _points_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 1, 'GroupSize', self._blimp.group_size, 'SavePath', self._blimp.output_folder)
+            _points_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 1, 'GroupSize', self._blimp.group_size, 
+                                              'SavePath', self._blimp.output_folder)
             self.all_points = _points_obj['all_points']
 
         else:
-            _points_path = next(os.path.join(self._blimp.naparm_path,file) for file in os.listdir(self._blimp.naparm_path) if file.endswith('_Points.mat'))
+            _points_path = next(os.path.join(self._blimp.naparm_path,file) for file in os.listdir(self._blimp.naparm_path) 
+                                             if file.endswith('_Points.mat'))
+
             self.all_points = load_mat_file(_points_path)['points']
             #copy the phase masks
             copy_tree(os.path.join(self._blimp.naparm_path, 'PhaseMasks'), os.path.join(self._blimp.output_folder, 'PhaseMasks'))
@@ -67,7 +70,8 @@ class AllCells():
             group_list.append(group_string)
 
         #merge each group into a single string
-        self.all_groups_mp = self._blimp.groups_strings(self._blimp.inter_group_interval, group_list, SLM_trigger = True, n_repeats=self._blimp.num_repeats)
+        self.all_groups_mp = self._blimp.groups_strings(self._blimp.inter_group_interval, group_list, SLM_trigger = True,
+                                                        n_repeats=self._blimp.num_repeats)
 
 
         #init numpy arrays from tiffs
@@ -83,7 +87,7 @@ class AllCells():
 
     def slm_trial(self):
 
-        ##the threaded function
+        # the threaded function
         slm_thread = Thread(target=self._blimp.sdk.load_precalculated_triggered, args = [self.repeat_arrays])
         slm_thread.start()
 

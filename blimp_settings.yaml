@@ -1,22 +1,22 @@
 #### photostimulation settings ####
 
 # path to the naparm folder containing points for experiments
-naparm_path: F:\Data\jrowland\2019-06-05\naparm\2019-06-05_plasticSlide_naparm_001
+naparm_path: F:\Data\jrowland\2019-08-01\naparm\2019-08-01_RL048_naparm_007
 #path to popt from DigitalPowerMeasurments
-popt_path: E:\PowerMeasurements\2019-06-04\2019-06-04_uncaging_slm_single_spot_1030_popt.npy
+popt_path: E:\PowerMeasurements\2019-07-25\2019-07-25_uncaging_slm_single_spot_1030_popt.npy
 #whether to recalculate phase masks, groups etc in blimp, rather than using those made in naparm
-redo_naparm: False
+redo_naparm: true
 # zoom you are imaging at, used only for spiral size
 zoom: 2
 # duration of each spiral (ms)
-duration: 10
+duration: 25
 #number of times to repeat spirals on each cell
-num_spirals: 1
+num_spirals: 10
 # the number of times to repeat going through round each group per trial
-num_repeats: 10
-# number of cells per group
-group_size: 40
-# power on sample / cell (18 mW is good for a burn)
+num_repeats: 1
+# number of cells per group. NOT USED in subset experiments
+group_size: 50
+# power on sample / cell (20 mW is good for a burn, 6 mW to image spots on camera)
 mWperCell: 6
 #time between groups (ms) -- should be at least 5
 inter_group_interval: 5
@@ -29,12 +29,17 @@ spiral_revolutions: 3
 
 #### behaviour settings ####
 
-#blimp experiment to run
-experiment: AllCells
-#the number of permuatations for each subset for a subset experiment
-subset_perms: 1
-#list of the number of cells to stim in a subset cells experiment
+# blimp experiment to run
+experiment: EasyTest
+# the number of permuatations for each subset for a subset experiment
+subset_perms: 3
+# list of the number of cells to stim in a subset cells experiment or test in EasyTest
 subset_sizes: [50, 40, 30, 20, 10, 5]
+# biggest subset weighting
+subset_weight: 3
+
+
+
 
 
 ########################################################
@@ -44,4 +49,6 @@ subset_sizes: [50, 40, 30, 20, 10, 5]
 # should be same as naparm setting
 FOVsize_UM_1x: 1118.5
 #path to save blimp outputs, updated automatically in startup_gui.py
-output_path: F:\Data\jrowland\2019-06-05\blimp
+output_path: F:\Data\jrowland\2019-08-01\blimp
+
+
