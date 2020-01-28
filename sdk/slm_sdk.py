@@ -18,9 +18,12 @@ class SLMsdk():
         abspath = os.path.abspath(__file__)
         dname = os.path.dirname(abspath)
         os.chdir(dname)
-        
+        #os.chdir(r'C:\Users\User\Documents\Code\blimp\sdk')
         #load dlls
-        cdll.LoadLibrary("Blink_SDK_C.dll")
+        cdll.LoadLibrary(os.path.join(dname, 'wdapi1021.dll'))
+        cdll.LoadLibrary(os.path.join(dname, 'Blink_SDK.dll'))
+        cdll.LoadLibrary(os.path.join(dname, 'Blink_SDK_C.dll'))
+
         self.slm_lib = CDLL("Blink_SDK_C")
    
         #python 3 requries conversion to bytes for c_char_p, use plain string in python 2
@@ -245,21 +248,5 @@ if __name__ == '__main__':
     sdk.load_precalculated_triggered(repeat_arrays)
     
     sdk.SLM_disconnect()
-    
-    
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
     
     

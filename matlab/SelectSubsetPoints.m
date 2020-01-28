@@ -1,14 +1,15 @@
 function keep_idx = SelectSubsetPoints(obj)
 
 %%%%%%%% maximum number of pixels apart points can be (2x 512)%%%%%%%%%%%%%%%
-max_distance = 350;
-disp(['You have inputted a max distance for SelectSubsetPoints of ' num2str(max_distance)])
+max_distance = 256;
+disp('WARNING HAVE HACKED THIS, ONLY WORKS AT 1024 0.8x POINTS CANT BE MORE THAN 350UM APART')
+%disp(['You have inputted a max distance for SelectSubsetPoints of ' num2str(max_distance)])
 %read in stored imaging information from naparm 
 zoom = obj.zoom;
 %only need to rescale by zoom as resoluition is already downsampled
-max_distance = max_distance / (2 / zoom);
+%max_distance = max_distance / (2 / zoom);
 
-disp(['This has been rescaled based on the zoom and resolution to ' num2str(max_distance)]) 
+%disp(['This has been rescaled based on the zoom and resolution to ' num2str(max_distance)]) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

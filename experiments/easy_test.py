@@ -49,7 +49,7 @@ class EasyTest():
         tiffs = []
         for subset, path in zip(self.subset_sizes, self.subset_paths):
             #try 10 times to chose a subset that can position galvos
-            for attempt in range(50):
+            for attempt in range(500):
 
                 try:
                     _point_obj = self._blimp.eng.Main(self._blimp.naparm_path, 'processAll', 0, 'GroupSize', 
@@ -57,8 +57,8 @@ class EasyTest():
                                                       'Save', 1, 'SavePath', path)
                     break
                 except Exception as e:
-                    if attempt == 49:
-                        print('could not build points obejct after 50 attempts')
+                    if attempt == 499:
+                        print('could not build points obejct after 500 attempts')
                         print(e)
                         time.sleep(10)
                         raise ValueError
@@ -72,6 +72,9 @@ class EasyTest():
             # into foxy ratio format
             galvo_x = np.asarray(_split_obj['centroid_x']).squeeze() / 512
             galvo_y = np.asarray(_split_obj['centroid_y']).squeeze() / 512
+
+            print("OBFOVINGGG")
+            galvo_y = (galvo_y * 1024 - (514/2)) / 514
 
             #the shape of the point array shows the group size
             mW_power = subset * self._blimp.mWperCell
@@ -118,6 +121,8 @@ class EasyTest():
         # into foxy ratio format
         galvo_x = np.asarray(self.all_points['centroid_x']).squeeze() / 512
         galvo_y = np.asarray(self.all_points['centroid_y']).squeeze() / 512
+        print("OBFOVINGGG")
+        galvo_y = (galvo_y * 1024 - (514/2)) / 514
 
         assert len(galvo_x) == len(galvo_y)
 
@@ -127,6 +132,10 @@ class EasyTest():
 
         pv_power = self._blimp.mw2pv(mW_power)
         print('PV power is {}'.format(pv_power))
+
+        if pv_power > 1000 or pv_power < 0:
+            print('PV POWER IS FOOOKED MATEEE')
+            time.sleep(100)
 
         num_groups = len(galvo_x)
         group_list = []

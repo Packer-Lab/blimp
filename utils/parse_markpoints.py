@@ -60,7 +60,7 @@ class ParseMarkpoints():
             if elem.tag == 'PVMarkPointElement':
 
                 #hardcoded for now from naparm yaml
-                LaserPowerScaleFactor =  5
+                LaserPowerScaleFactor =  3.3
                 xml_power = elem.attrib['UncagingLaserPower']
                 blimp_power = float(xml_power) * (1000/LaserPowerScaleFactor);
                 self.laser_powers.append(str(blimp_power))

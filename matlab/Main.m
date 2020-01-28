@@ -31,12 +31,34 @@ naparm_points = naparm.points;
 Points.X = naparm_points.X;
 Points.Y = naparm_points.Y;
 
+% fig = zeros(1024,1024);
+% 
+% for i = 1:length(Points.Y)
+%     fig(Points.Y(i), Points.X(i)) = 1;
+% end
+% 
+% figure
+% imshow(fig, [])
+
+
+
 %rescale to 512x512 for compatibility with existing functions
+%keyboard
+%disp(num2str(naparm_points.fovsize_px))
+
+
 scaling_factor = naparm_points.fovsize_px / 512;
 Points.X = round(Points.X / scaling_factor);
 Points.Y = round(Points.Y / scaling_factor);
-
-
+%keyboard
+% fig = zeros(512,512);
+% 
+% for i = 1:length(Points.Y)
+%     fig(Points.Y(i), Points.X(i)) = 1;
+% end
+% 
+% figure
+% imshow(fig, [])
 
 
 %add plane information to structures from naparm2

@@ -70,17 +70,35 @@ if exist('tif_file', 'var')
     
 end
 
-% foxy takes care of this
-% FOVsize_OpticalZoom = 0.83;
-FOVsize_OpticalZoom = yaml.FOVsize_OpticalZoom;
+%%%% THIS IS THE ORIGINAL SCALING IN HERE THAT I DONT THINK WORKS
+
+% %RL 2018-11-15 for scaling targets according to optical zoom
+% % keyboard
+% for i = 1:length(Points)
+%     for j = 1:size(Points{i},1)
+%         for k = 1:2
+%             a = Points{i}(j,k); %SLM target position
+%             b = abs(255-a); %Distance between SLM target and galvo
+%             c = (b*2)/FOVsize_OpticalZoom; %scale the distance from a 2x zoom transform
+%             if Points{i}(j,k) < 255
+%                 Points{i}(j,k) = 255-c;
+%             else
+%                 Points{i}(j,k) = 255+c;
+%             end
+%         end
+%     end
+% end
+
+
+%%% RESCALING TAKEN FROM SLMphaseMakerJR.m
 %RL 2018-11-15 for scaling targets according to optical zoom
-% keyboard
+FOVsize_OpticalZoom = yaml.FOVsize_OpticalZoom;
 for i = 1:length(Points)
     for j = 1:size(Points{i},1)
         for k = 1:2
             a = Points{i}(j,k); %SLM target position
             b = abs(255-a); %Distance between SLM target and galvo
-            c = (b*2)/FOVsize_OpticalZoom; %scale the distance from a 2x zoom transform
+            c = b/FOVsize_OpticalZoom; %scale the distance from a 2x zoom transform
             if Points{i}(j,k) < 255
                 Points{i}(j,k) = 255-c;
             else
@@ -89,6 +107,7 @@ for i = 1:length(Points)
         end
     end
 end
+
 % keyboard
 x_offset =  yaml.TForm_X_offset;
 y_offset =  yaml.TForm_Y_offset;
@@ -105,6 +124,8 @@ TransformedSLMTargets = {};
 PhaseMasks = {};
 
 NumGroups = numel(Points);
+
+
 for idx = 1:NumGroups
     
     if (idx<100)&(idx>=10); buffer = '0'; elseif idx>100; buffer = ''; else buffer = '00'; end
@@ -127,9 +148,6 @@ for idx = 1:NumGroups
     
     [y,x,~] = find(InputTargets);
     
-    
-    
-    
     % Convert target *coordinates* directly from 2P to SLM space
     switch transformChoice
         case 'Yes'
@@ -145,6 +163,9 @@ for idx = 1:NumGroups
     for i = 1:length(u)
         SLMtargets(v(i),u(i)) = 255;
     end
+    
+    
+    %figure, imshow(SLMtargets)
     
     if save_files
         

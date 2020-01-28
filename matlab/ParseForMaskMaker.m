@@ -20,7 +20,7 @@ for i = 1:numGroups
     %index of each group 
     idx = find(Points.Group==(i));
     points_array{i} = horzcat(Points.offset_x(idx), Points.offset_y(idx), Points.Z(idx)', ones(length(Points.offset_x(idx)),1));
-    
+    %points_array{i} = horzcat(Points.X(idx)', Points.Y(idx)', Points.Z(idx)', ones(length(Points.offset_x(idx)),1));
 end
 
 Points.numGroups = numGroups;

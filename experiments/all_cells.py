@@ -43,7 +43,8 @@ class AllCells():
         # into foxy ratio format
         galvo_x = np.asarray(self.all_points['centroid_x']).squeeze() / 512
         galvo_y = np.asarray(self.all_points['centroid_y']).squeeze() / 512
-
+        print('OBFOVIUNNGGGG')
+        galvo_y = (galvo_y * 1024 - (514/2)) / 514
         assert len(galvo_x) == len(galvo_y)
 
         num_groups = len(galvo_x)
